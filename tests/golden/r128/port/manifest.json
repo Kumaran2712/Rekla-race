@@ -2,7 +2,7 @@
   "url": "http://localhost:8128/index.html",
   "viewport": "port",
   "bendApex": 742,
-  "loadMsHeadless": 8064,
+  "loadMsHeadless": 7378,
   "shots": {
     "V1-noon": {
       "calls": 523,
@@ -17,45 +17,45 @@
       "textures": 24
     },
     "V2-noon": {
-      "calls": 383,
-      "triangles": 642882,
-      "geometries": 330,
+      "calls": 380,
+      "triangles": 643250,
+      "geometries": 328,
       "textures": 34
     },
     "V3-noon": {
-      "calls": 349,
-      "triangles": 594798,
-      "geometries": 375,
+      "calls": 344,
+      "triangles": 594678,
+      "geometries": 368,
       "textures": 34
     },
     "V4-noon": {
-      "calls": 308,
-      "triangles": 693956,
-      "geometries": 385,
+      "calls": 309,
+      "triangles": 692052,
+      "geometries": 376,
       "textures": 34
     },
     "V5-noon": {
-      "calls": 332,
-      "triangles": 784918,
-      "geometries": 394,
+      "calls": 329,
+      "triangles": 783692,
+      "geometries": 387,
       "textures": 34
     },
     "V6-noon": {
-      "calls": 372,
-      "triangles": 832754,
-      "geometries": 424,
+      "calls": 375,
+      "triangles": 834534,
+      "geometries": 413,
       "textures": 35
     },
     "V7-noon": {
-      "calls": 350,
-      "triangles": 598900,
-      "geometries": 427,
+      "calls": 334,
+      "triangles": 598846,
+      "geometries": 416,
       "textures": 35
     },
     "V8-noon": {
-      "calls": 381,
-      "triangles": 637955,
-      "geometries": 427,
+      "calls": 352,
+      "triangles": 637211,
+      "geometries": 416,
       "textures": 35
     }
   },
