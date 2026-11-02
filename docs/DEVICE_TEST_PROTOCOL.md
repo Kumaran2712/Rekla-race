@@ -7,7 +7,7 @@ Required by gate 9 of the approval brief. Headless results do not count as devic
 | Slot | Requirement | Browser |
 | --- | --- | --- |
 | A | iPhone 16 or newer — **confirmed: iPhone 16** | Safari (current iOS) |
-| B | A flagship Android phone — **confirmed: a Google Pixel (exact model to be entered in the stats panel)** | Chrome (current) |
+| B | A flagship Android phone — **confirmed: Google Pixel 9** | Chrome (current) |
 
 Chrome on Android hides the phone model from websites (user-agent reduction), and Safari never exposes the iPhone model, so the tester types the exact model into the panel. The report records OS, browser version, screen and GPU automatically.
 
