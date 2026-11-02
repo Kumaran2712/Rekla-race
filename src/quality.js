@@ -23,7 +23,7 @@ export const TIERS = [
 ];
 
 const KEY = 'rekla-quality';
-const params = new URLSearchParams(location.search);
+const params = R.params;
 const forced = params.has('tier') ? Math.max(0, Math.min(5, Number(params.get('tier')) | 0)) : null;
 
 function readStored() {

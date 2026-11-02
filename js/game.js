@@ -10,7 +10,7 @@
   const reduceMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   const clamp = R.clamp, rand = (a, b) => a + Math.random() * (b - a); // cosmetic only (dust, sparks)
   // Simulation randomness is seeded per race (src/sim-clock.js): ?seed=N makes races reproducible.
-  const seedParam = new URLSearchParams(location.search).has('seed') ? Number(new URLSearchParams(location.search).get('seed')) >>> 0 : null;
+  const seedParam = R.params.has('seed') ? Number(R.params.get('seed')) >>> 0 : null;
   let simRand = Math.random, raceSeed = 0, raceCount = 0;
   const rnd = () => simRand(), srand = (a, b) => a + rnd() * (b - a);
   const latOf = lx => (lx - (LANES - 1) / 2) * LANE_W;
@@ -866,7 +866,7 @@
   // &autoplay=1: the built-in perfect bot races pack races back to back (scenario 2 and the soak).
   // &leaktest=1: 20 race / menu / breed-change cycles with GPU counts in the stats report.
   // &losecontext=1: drops and restores the graphics context 5 s into the first race.
-  const qs = new URLSearchParams(location.search);
+  const qs = R.params;
   const AUTO = { play: qs.has('autoplay'), leak: qs.has('leaktest'), lose: qs.has('losecontext'), races: 0, wait: 0, n: 0 };
   function autoStep() {
     if (state !== 'race' || P.fin !== null) return;

@@ -3,7 +3,7 @@
 // "estimate" values are calculated (e.g. texture memory from texture sizes) and can be off.
 
 const R = (window.R = window.R || {});
-const enabled = new URLSearchParams(location.search).has('stats');
+const enabled = R.params.has('stats');
 
 const S = {
   enabled,

@@ -9,7 +9,7 @@
 const R = (window.R = window.R || {});
 const T = () => window.THREE;
 
-const params = new URLSearchParams(location.search);
+const params = R.params;
 let flag = params.get('cam') === 'v2';
 try { if (!params.has('cam') && localStorage.getItem('rekla-cam-v2') === '1') flag = true; } catch (e) { /* not stored */ }
 
