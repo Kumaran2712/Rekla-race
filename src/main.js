@@ -11,4 +11,5 @@ import '../js/crowd.js';
 import '../js/weather.js';
 import '../js/post.js';
 import '../js/audio.js';
+import './sim-clock.js';
 import '../js/game.js';

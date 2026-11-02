@@ -8,7 +8,11 @@
   const { LANES, LANE_W } = R;
   const CART_LEN = 5.2, VMAX = 19;
   const reduceMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const clamp = R.clamp, rand = (a, b) => a + Math.random() * (b - a);
+  const clamp = R.clamp, rand = (a, b) => a + Math.random() * (b - a); // cosmetic only (dust, sparks)
+  // Simulation randomness is seeded per race (src/sim-clock.js): ?seed=N makes races reproducible.
+  const seedParam = new URLSearchParams(location.search).has('seed') ? Number(new URLSearchParams(location.search).get('seed')) >>> 0 : null;
+  let simRand = Math.random, raceSeed = 0, raceCount = 0;
+  const rnd = () => simRand(), srand = (a, b) => a + rnd() * (b - a);
   const latOf = lx => (lx - (LANES - 1) / 2) * LANE_W;
 
   const PLAYER = { name: 'You', body: '#c8321c', turban: '#f3a312', num: '7', player: true };
@@ -91,15 +95,15 @@
     const types = mode.rivals ? ['pothole', 'puddle', 'pothole', 'puddle', 'goat', 'cane'] : ['pothole', 'puddle', 'pothole', 'goat'];
     const add = (type, d, lane) => {
       const m = type === 'goat' ? R.Models.goat(scene) : type === 'cane' ? R.Models.cane(scene) : R.Models.hole(type, scene);
-      obs.push({ type, d, lx: lane, dir: Math.random() < 0.5 ? -1 : 1, hit: new Set(), gone: false, scared: false, m });
+      obs.push({ type, d, lx: lane, dir: rnd() < 0.5 ? -1 : 1, hit: new Set(), gone: false, scared: false, m });
     };
     let d = mode.rivals ? 55 : 45;
     while (d < mode.len - 25) {
-      const type = types[(Math.random() * types.length) | 0];
-      const lane = (Math.random() * LANES) | 0;
+      const type = types[(rnd() * types.length) | 0];
+      const lane = (rnd() * LANES) | 0;
       add(type, d, lane);
-      if (type !== 'goat' && Math.random() < 0.35) add(Math.random() < 0.5 ? 'pothole' : 'puddle', d + rand(-2, 2), (lane + 1 + ((Math.random() * (LANES - 1)) | 0)) % LANES);
-      d += rand(22, 42);
+      if (type !== 'goat' && rnd() < 0.35) add(rnd() < 0.5 ? 'pothole' : 'puddle', d + srand(-2, 2), (lane + 1 + ((rnd() * (LANES - 1)) | 0)) % LANES);
+      d += srand(22, 42);
     }
   }
   function buildPlayerModel() {
@@ -108,11 +112,15 @@
   }
   function newCart(def, m, lane, dist) {
     const stats = R.pairStats((def.breeds || setup.breeds)[0], (def.breeds || setup.breeds)[1]);
-    return { ...def, stats, lx: lane, lane, dist, v: 0, ph: Math.random() * 6, stam: 100, fin: null, whip: 0, step: Math.random() * 6,
-      dodge: new Set(), base: def.base ? def.base + rand(-0.25, 0.25) : 0, m, jolt: 0, fallen: false, runT: 0, bumpCD: 2, fouls: 0, penalty: 0, dq: false,
-      combo: 0, unsettle: 0, lastShout: -9, brace: null, pull: null, pullT: rand(5, 9), dod: false };
+    return { ...def, stats, lx: lane, lane, dist, v: 0, ph: rnd() * 6, stam: 100, fin: null, whip: 0, step: rnd() * 6,
+      dodge: new Set(), base: def.base ? def.base + srand(-0.25, 0.25) : 0, m, jolt: 0, fallen: false, runT: 0, bumpCD: 2, fouls: 0, penalty: 0, dq: false,
+      combo: 0, unsettle: 0, lastShout: -9, brace: null, pull: null, pullT: srand(5, 9), dod: false };
   }
   function reset() {
+    raceSeed = seedParam != null ? (seedParam + raceCount) >>> 0 : (Math.random() * 4294967296) >>> 0;
+    raceCount++;
+    simRand = R.SimClock.seeded(raceSeed);
+    inputs.length = 0;
     mode = MODES[setup.mode];
     P = newCart(PLAYER, playerModel, 1, 0);
     carts = [P];
@@ -164,7 +172,7 @@
   // ---------- brace, thrown, run and catch ----------
   function startBrace(c, cause, strength = 1) {
     if (c.fallen || c.fin !== null) return;
-    if (!c.player) { if (Math.random() < clamp((1 - c.skill) * 0.55 * strength, 0.03, 0.7)) throwOff(c); return; }
+    if (!c.player) { if (rnd() < clamp((1 - c.skill) * 0.55 * strength, 0.03, 0.7)) throwOff(c); return; }
     if (P.brace) return;
     const win = clamp(0.5 + 0.35 * (P.stats.calm - 0.7), 0.42, 0.68) / strength;
     P.brace = { t: win, max: win, cause };
@@ -190,7 +198,7 @@
       shake = reduceMotion ? 0 : 0.5; buzz(120); audio('thrown', c);
       for (let i = 0; i < 14; i++) emit(_v.x + rand(-1, 1), _v.y + 0.3, _v.z + rand(-1, 1), rand(-2, 2), rand(1, 3), rand(-1, 1), 1.1, rand(0.7, 1.3), '#b07a4e');
     } else {
-      c.runT = rand(2.6, 5.2);
+      c.runT = srand(2.6, 5.2);
       audio('rivalThrown', c);
       if (Math.abs(c.dist - P.dist) < 40) say(c.name + ' is thrown!', '#ffd27a');
     }
@@ -257,13 +265,19 @@
   // stride rate and beat position, shared with the audio (bell rings on each whole stride)
   const strideRate = c => (4 + c.v * 0.55) / Math.PI;
   const strideFrac = c => { const s = c.step / Math.PI; return s - Math.floor(s); };
-  function hai() {
-    haiBtn.classList.add('press'); setTimeout(() => haiBtn.classList.remove('press'), 90);
+  // ts: event.timeStamp of the tap; stateWall: wall time the simulation state currently represents.
+  // The tap is judged on the stride phase at the tap's own time (extrapolated from the current state),
+  // so the grade does not depend on the frame rate. Without timestamps (bots, tests) it is judged now.
+  function hai(ts, stateWall) {
+    if (ts == null) { haiBtn.classList.add('press'); setTimeout(() => haiBtn.classList.remove('press'), 90); }
     if (anyBraceInput()) return;
     if (state !== 'race' || P.fin !== null) return;
     if (P.fallen) { tryCatch(); return; }
-    const frac = strideFrac(P), err = Math.min(frac, 1 - frac) / strideRate(P);
-    const since = t - P.lastShout; P.lastShout = t;
+    const off = ts != null && stateWall != null ? ((ts - stateWall) / 1000) * timeScale : 0;
+    const stepAt = P.step + off * (P.v > 0.2 ? 4 + P.v * 0.55 : 0);
+    const frac = ((stepAt / Math.PI) % 1 + 1) % 1, err = Math.min(frac, 1 - frac) / strideRate(P);
+    const tAt = t + off;
+    const since = tAt - P.lastShout; P.lastShout = tAt;
     let grade = err < 0.042 ? 'perfect' : err < 0.085 ? 'good' : 'off';
     if (since < 0.13) grade = 'off';
     const k = P.stam / 100, st = P.stats, dod = P.dod ? 1.35 : 1, cost = (P.dod ? 1.8 : 1) / st.stamina;
@@ -273,9 +287,11 @@
     P.stam = Math.max(0, P.stam);
     P.v = Math.min(VMAX * st.speed * (P.dod ? 1.06 : 1), P.v);
     P.whip = 0.3;
+    judgeLog.push({ grade, ts: ts == null ? null : +ts.toFixed(2), dist: +P.dist.toFixed(2) });
+    if (judgeLog.length > 2000) judgeLog.shift();
     judge(grade === 'perfect' ? (P.combo >= 3 ? 'Perfect ×' + P.combo : 'Perfect!') : grade === 'good' ? 'Good' : 'Off-beat', grade);
     audio('hai', P); if (grade === 'perfect') audio('perfect', P); if (grade === 'off') audio('off', P);
-    if (grade === 'off' && P.unsettle >= 3 && Math.random() < 0.55 * (1.25 - st.calm)) { P.unsettle = 0; say('The bulls lurch!', '#ffb08a'); startBrace(P, 'lurch'); }
+    if (grade === 'off' && P.unsettle >= 3 && rnd() < 0.55 * (1.25 - st.calm)) { P.unsettle = 0; say('The bulls lurch!', '#ffb08a'); startBrace(P, 'lurch'); }
     if (P.stam < 12 && t - lastTired > 2.5) { say('Bulls are tired. Ease off.', '#ffd9a0'); lastTired = t; audio('tired', P); }
   }
   function cycleCam() {
@@ -295,21 +311,40 @@
     paintSnd();
   } else sndBtn.hidden = true;
   $('camBtn').addEventListener('click', e => { e.stopPropagation(); cycleCam(); });
-  const press = (el, fn) => el.addEventListener('pointerdown', e => { e.preventDefault(); fn(); });
-  press($('bl'), () => steer(-1)); press($('br'), () => steer(1)); press(haiBtn, hai);
-  let sx = null, sy = null;
-  C.addEventListener('pointerdown', e => { sx = e.clientX; sy = e.clientY; });
+  // Gameplay input is queued with its event.timeStamp and applied in order inside the fixed steps.
+  const inputs = [], judgeLog = [];
+  function queueInput(kind, dir, ts) {
+    if (paused || resumeT > 0) return;
+    const e = { kind, dir, ts: ts != null ? ts : performance.now() };
+    let i = inputs.length; while (i > 0 && inputs[i - 1].ts > e.ts) i--;
+    inputs.splice(i, 0, e);
+  }
+  function drainInputs(stepWall) {
+    // state at the start of this step represents stepWall - one step
+    const stateWall = stepWall - R.SimClock.STEP_MS;
+    while (inputs.length && inputs[0].ts <= stepWall) {
+      const e = inputs.shift();
+      if (e.kind === 'hai') hai(e.ts, stateWall); else if (e.kind === 'steer') steer(e.dir); else if (e.kind === 'catch') tryCatch();
+    }
+  }
+  const pressFx = () => { haiBtn.classList.add('press'); setTimeout(() => haiBtn.classList.remove('press'), 90); };
+  const press = (el, fn) => el.addEventListener('pointerdown', e => { e.preventDefault(); fn(e.timeStamp); });
+  press($('bl'), ts => queueInput('steer', -1, ts)); press($('br'), ts => queueInput('steer', 1, ts));
+  press(haiBtn, ts => { pressFx(); queueInput('hai', 0, ts); });
+  let sx = null, sy = null, sts = 0;
+  C.addEventListener('pointerdown', e => { sx = e.clientX; sy = e.clientY; sts = e.timeStamp; });
   C.addEventListener('pointerup', e => {
     if (sx === null) return;
     const dx = e.clientX - sx, dy = e.clientY - sy; sx = null;
-    if (Math.abs(dx) > 35 && Math.abs(dx) > Math.abs(dy)) steer(dx > 0 ? 1 : -1);
-    else if (dy < -40 && Math.abs(dy) > Math.abs(dx) && P && P.fallen) tryCatch();
-    else if (Math.abs(dx) < 18 && Math.abs(dy) < 18) hai();
+    if (Math.abs(dx) > 35 && Math.abs(dx) > Math.abs(dy)) queueInput('steer', dx > 0 ? 1 : -1, e.timeStamp);
+    else if (dy < -40 && Math.abs(dy) > Math.abs(dx) && P && P.fallen) queueInput('catch', 0, e.timeStamp);
+    // a tap is judged at the moment the finger touched (pointerdown), not when it lifted
+    else if (Math.abs(dx) < 18 && Math.abs(dy) < 18) { pressFx(); queueInput('hai', 0, sts); }
   });
   window.addEventListener('keydown', e => {
-    if (e.key === 'ArrowLeft' || e.key === 'a') { steer(-1); e.preventDefault(); }
-    else if (e.key === 'ArrowRight' || e.key === 'd') { steer(1); e.preventDefault(); }
-    else if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w') { if (!e.repeat) hai(); e.preventDefault(); }
+    if (e.key === 'ArrowLeft' || e.key === 'a') { queueInput('steer', -1, e.timeStamp); e.preventDefault(); }
+    else if (e.key === 'ArrowRight' || e.key === 'd') { queueInput('steer', 1, e.timeStamp); e.preventDefault(); }
+    else if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w') { if (!e.repeat) { pressFx(); queueInput('hai', 0, e.timeStamp); } e.preventDefault(); }
     else if (e.key === 'b' || e.key === 'B') { anyBraceInput(); }
     else if (e.key === 'c' || e.key === 'C') { if (state !== 'loading') cycleCam(); }
     else if (e.key === 'Enter' && (state === 'ready' || state === 'end')) startRace();
@@ -317,6 +352,7 @@
   function startRace() {
     if (R.Audio) R.Audio.unlock();
     reset(); state = 'count'; lastN = 99; autoCam = 'start'; autoCamT = 0; snap = true;
+    clock.resync(performance.now());
     $('startOv').hidden = true; $('endOv').hidden = true; $('hint').hidden = false;
     setTimeout(() => { $('hint').hidden = true; }, 6500);
   }
@@ -332,9 +368,9 @@
       const ahead = o.d - r.dist;
       if (ahead > 2 && ahead < 15 && Math.abs(o.lx - r.lane) < 0.6) {
         r.dodge.add(o);
-        if (Math.random() < 0.55 + r.skill * 0.35) {
+        if (rnd() < 0.55 + r.skill * 0.35) {
           const opts = [r.lane - 1, r.lane + 1].filter(l => l >= 0 && l < LANES && laneFree(l, r) && !obsNear(l, r.dist));
-          if (opts.length) r.lane = opts[(Math.random() * opts.length) | 0];
+          if (opts.length) r.lane = opts[(rnd() * opts.length) | 0];
         }
       }
     }
@@ -353,7 +389,7 @@
       c.v *= 0.78;
       for (let i = 0; i < 18; i++) emit(x + rand(-1.1, 1.1), y + 0.2, z + rand(-1.5, 1.5), rand(-3, 3), rand(2, 4.5), rand(-1, 1), 0.7, rand(0.3, 0.6), '#8fa3a4');
       if (me) { buzz(30); say('Splash!', '#cfeef2'); }
-      if (wet > 0.4 && c.v > 9 && Math.random() < (1.25 - c.stats.wet) * wet) { if (me) say('Slipping!', '#cfeef2'); startBrace(c, 'slip', 0.9); }
+      if (wet > 0.4 && c.v > 9 && rnd() < (1.25 - c.stats.wet) * wet) { if (me) say('Slipping!', '#cfeef2'); startBrace(c, 'slip', 0.9); }
     } else if (o.type === 'goat') {
       c.v *= 0.5; c.stam = Math.max(0, c.stam - 12); c.jolt = 0.4;
       if (me) { shake = reduceMotion ? 0 : 0.35; buzz(80); say('Goat on the road!', '#ffd27a'); }
@@ -468,7 +504,7 @@
       } else {
         const waits = st.calm >= 1;     // calm, settled bulls slow down and wait for their saarathi
         P.v += ((waits ? 1.4 : 5.5) - P.v) * (waits ? 1.3 : 0.4) * dt;
-        if (!waits && Math.random() < dt * 0.4) { const nl = P.lane + (Math.random() < 0.5 ? -1 : 1); if (nl >= 0 && nl < LANES && laneFree(nl, P)) P.lane = nl; }
+        if (!waits && rnd() < dt * 0.4) { const nl = P.lane + (rnd() < 0.5 ? -1 : 1); if (nl >= 0 && nl < LANES && laneFree(nl, P)) P.lane = nl; }
       }
       P.unsettle = Math.max(0, P.unsettle - 0.5 * dt);
       if (P.bumpCD > 0) P.bumpCD -= dt;
@@ -479,7 +515,7 @@
         if (P.pull) { P.pull.t -= dt; if (P.pull.t <= 0) { const nl = P.lane + P.pull.dir; if (nl >= 0 && nl < LANES && laneFree(nl, P)) P.lane = nl; P.pull = null; hidePrompt(); } }
         else if (Math.abs(st.pull) > 0.03 && P.stam < 40) {
           P.pullT -= dt;
-          if (P.pullT <= 0) { P.pullT = rand(5, 8); const dir = st.pull > 0 ? -1 : 1; P.pull = { dir, t: 0.9 }; showPrompt(dir < 0 ? '◀ Pulling left' : 'Pulling right ▶', 'Steer the other way', 'pull'); }
+          if (P.pullT <= 0) { P.pullT = srand(5, 8); const dir = st.pull > 0 ? -1 : 1; P.pull = { dir, t: 0.9 }; showPrompt(dir < 0 ? '◀ Pulling left' : 'Pulling right ▶', 'Steer the other way', 'pull'); }
         }
       }
       // Do or Die: the last stretch
@@ -509,10 +545,10 @@
         const gap = clamp((P.dist - r.dist) * 0.04, -1.8, 2.2);
         const target = r.fin !== null ? 4 : (r.base + Math.sin(t * 0.45 + r.ph) * 1.5 + gap) * (0.94 + 0.06 * r.stats.speed) * (1 - wet * 0.08 * Math.max(0, 1.15 - r.stats.wet));
         r.v += (target - r.v) * 0.8 * dt;
-        if (!r.whip || r.whip <= 0) { if (r.v < target - 0.3 && Math.random() < dt * 2) { r.whip = 0.3; if (Math.random() < 0.6) audio('rivalHai', r); } }
+        if (!r.whip || r.whip <= 0) { if (r.v < target - 0.3 && rnd() < dt * 2) { r.whip = 0.3; if (rnd() < 0.6) audio('rivalHai', r); } }
         rivalSteer(r);
         // reckless rivals bump the player when alongside
-        if (state === 'race' && mode.rivals && r.bumpCD <= 0 && !P.fallen && P.fin === null && Math.abs(r.dist - P.dist) < 3 && Math.abs(Math.abs(r.lx - P.lx) - 1) < 0.25 && Math.random() < r.aggro * dt * 0.9) {
+        if (state === 'race' && mode.rivals && r.bumpCD <= 0 && !P.fallen && P.fin === null && Math.abs(r.dist - P.dist) < 3 && Math.abs(Math.abs(r.lx - P.lx) - 1) < 0.25 && rnd() < r.aggro * dt * 0.9) {
           doBump(r, P, Math.sign(P.lane - r.lane));
         }
       }
@@ -747,23 +783,62 @@
   }
 
   // ---------- frame loop ----------
-  let last = performance.now(), frames = 0, acc = 0, slow = 0, fast = 0;
+  // Fixed 60 Hz simulation (src/sim-clock.js): at most 4 steps per frame, extra backlog dropped.
+  // What is drawn is interpolated between the last two steps (alpha), so motion stays smooth at any FPS.
+  const clock = new R.SimClock.FixedStepClock(), STEP = R.SimClock.STEP_S;
+  let last = null, frames = 0, acc = 0, slow = 0, fast = 0;
+  let paused = false, resumeT = 0, glLost = false;
   R.stats = { fps: 0 };
+  function savePrev() {
+    for (const c of carts) { c._pd = c.dist; c._pl = c.lx; c._ps = c.step; }
+    if (runner && runner.st) { runner.st._pd = runner.st.dist; runner.st._pl = runner.st.lat; }
+  }
+  const lerpTo = (a, b, k) => a + (b - a) * k;
+  const swapped = [];
+  function interpolate(alpha) {
+    for (const c of carts) {
+      if (c._pd === undefined) continue;
+      swapped.push([c, c.dist, c.lx, c.step]);
+      c.dist = lerpTo(c._pd, c.dist, alpha); c.lx = lerpTo(c._pl, c.lx, alpha); c.step = lerpTo(c._ps, c.step, alpha);
+    }
+    const rs = runner && runner.st;
+    if (rs && rs._pd !== undefined) { swapped.push([rs, rs.dist, rs.lat]); rs.dist = lerpTo(rs._pd, rs.dist, alpha); rs.lat = lerpTo(rs._pl, rs.lat, alpha); }
+  }
+  function restore() {
+    for (const [o, d, l, st] of swapped) { o.dist = d; if (o.lx !== undefined) { o.lx = l; o.step = st; } else o.lat = l; }
+    swapped.length = 0;
+  }
+  function forgetPrev() { for (const c of carts) c._pd = undefined; if (runner && runner.st) runner.st._pd = undefined; }
+
   function frame(now) {
+    requestAnimationFrame(frame);
+    if (last === null) last = now;
     const rdt = Math.min(0.05, (now - last) / 1000); last = now;
+    if (glLost) return;
     renderer.info.reset();
-    const dt = update(rdt);
+    let dt = 0;
+    if (paused) clock.resync(now);
+    else if (resumeT > 0) {
+      clock.resync(now);
+      resumeT -= rdt;
+      const cnt = $('count'), n = Math.ceil(resumeT);
+      cnt.hidden = resumeT <= 0; cnt.textContent = n > 0 ? String(n) : '';
+    } else {
+      clock.advance(now, stepWall => { savePrev(); drainInputs(stepWall); dt += update(STEP); });
+    }
     R.U.time.value += dt;
+    interpolate(clock.alpha);
     placeActors(dt);
     updateCamera(rdt);
     R.Sky.update(camera, focus);
     R.updateScatters(P.dist);
     if (R.Weather) R.Weather.update(dt, camera, P, t);
     if (R.Crowd) R.Crowd.update(dt, carts, t);
-    if (R.Audio) R.Audio.update(dt, { state, carts, P });
+    if (R.Audio) R.Audio.update(dt, { state: paused || resumeT > 0 ? 'paused' : state, carts, P });
     if (R.World.update) R.World.update(dt, camera, t);
     if (R.Post && R.Post.enabled) R.Post.render(renderer, scene, camera, { speed: clamp(P.v / VMAX, 0, 1), dt });
     else renderer.render(scene, camera);
+    restore();
     hud();
     frames++; acc += rdt;
     if (acc > 1.5) {
@@ -774,10 +849,47 @@
       else if (slow >= 3 && renderer.shadowMap.enabled && R.Sky.sun.shadow.mapSize.x > 512) { R.Sky.sun.shadow.mapSize.set(512, 512); R.Sky.sun.shadow.map && R.Sky.sun.shadow.map.dispose(); R.Sky.sun.shadow.map = null; slow = 0; }
       if (fast >= 4 && dpr < Math.min(window.devicePixelRatio || 1, R.Q.dprMax)) { dpr = Math.min(R.Q.dprMax, dpr + 0.25); renderer.setPixelRatio(dpr); resize(); fast = 0; }
     }
-    requestAnimationFrame(frame);
   }
 
-  // ---------- build the world in steps, keeping the page responsive ----------
+  // ---------- pause, resume, lost graphics ----------
+  const pauseOv = $('pauseOv');
+  function pause(why) {
+    if (paused || !(state === 'race' || state === 'count')) return;
+    paused = true; resumeT = 0; inputs.length = 0;
+    $('pauseTitle').textContent = why === 'gl' ? 'Restoring graphics…' : 'Paused';
+    $('pauseLine').textContent = why === 'gl' ? 'The phone reset its graphics. One moment.' : 'The race waits for you. Your bulls hold their place.';
+    $('resumeBtn').hidden = why === 'gl';
+    pauseOv.hidden = false;
+  }
+  function resume() {
+    if (!paused || glLost) return;
+    paused = false; pauseOv.hidden = true;
+    resumeT = state === 'race' ? 3 : 0;   // a 3-2-1 before racing resumes; the start countdown just continues
+    clock.resync(performance.now());
+    if (R.Audio && R.Audio.on) R.Audio.unlock();
+  }
+  $('resumeBtn').addEventListener('click', e => { e.stopPropagation(); resume(); });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) pause('hidden'); });
+  window.addEventListener('pagehide', () => pause('hidden'));
+  document.addEventListener('freeze', () => pause('hidden'));
+  C.addEventListener('webglcontextlost', e => {
+    e.preventDefault();               // tells the browser we will restore
+    glLost = true;
+    if (state === 'race' || state === 'count') pause('gl');
+  });
+  C.addEventListener('webglcontextrestored', () => {
+    // three re-creates its GPU state itself; the environment map is baked content and must be re-baked
+    glLost = false;
+    try { R.Sky.apply(R.Sky.id); renderer.render(scene, camera); }
+    catch (err) {
+      console.error('Graphics could not be restored, reloading to the menu', err);
+      location.reload();
+      return;
+    }
+    clock.resync(performance.now());
+    if (paused) { $('pauseTitle').textContent = 'Paused'; $('pauseLine').textContent = 'Graphics restored. Continue when ready.'; $('resumeBtn').hidden = false; }
+  });
+
   const tick = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
   async function build() {
     const label = $('bestStart'), btn = $('startBtn');
@@ -812,7 +924,14 @@
   R.debug = {
     get state() { return state; }, get P() { return P; }, get carts() { return carts; }, renderer, scene, camera, startRace,
     setAtmo: id => { atmo = id; applyAtmo(); }, setMode: m => { setup.mode = m; reset(); }, setCam: i => { setup.cam = i; snap = true; },
-    jump: s => { if (P) { P.dist = s; snap = true; } }, skip: () => { countT = 0.01; },
+    jump: s => { if (P) { P.dist = s; snap = true; forgetPrev(); } }, skip: () => { countT = 0.01; },
+    // M1 test hooks: timestamped taps, judgement log, clock, lifecycle
+    tapAt: ts => queueInput('hai', 0, ts), steerAt: (dir, ts) => queueInput('steer', dir, ts), judgeLog,
+    get clock() { return { simWall: clock.simWall, alpha: clock.alpha, capHits: clock.capHits, droppedMs: clock.droppedMs }; },
+    get raceSeed() { return raceSeed; }, get paused() { return paused; }, get resumeT() { return resumeT; },
+    pause: () => pause('hidden'), resume,
+    loseContext: () => { const x = renderer.getContext().getExtension('WEBGL_lose_context'); x && x.loseContext(); return !!x; },
+    restoreContext: () => { const x = renderer.getContext().getExtension('WEBGL_lose_context'); x && x.restoreContext(); return !!x; },
     throwMe: () => throwOff(P), brace: () => startBrace(P, 'test'), hai, steer,
     // fast headless play-testing: advance the simulation without rendering; bot = 'perfect' | 'sloppy' | null
     sim: (secs, bot, fps = 60) => { const dt = 1 / fps; let n = Math.round(secs * fps), log = { perfect: 0, good: 0, off: 0, thrown: 0, braces: 0, caught: 0, bumps: 0 };
