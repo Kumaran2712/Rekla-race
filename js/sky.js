@@ -124,8 +124,13 @@
     this.sun.color.copy(col(p.sunCol)); this.sun.intensity = p.sunI * Math.PI; // r128 legacy units x PI
     this.hemi.color.copy(col(p.hemiSky)); this.hemi.groundColor.copy(col(p.hemiGround)); this.hemi.intensity = p.hemiI * Math.PI;
     const fc = col(p.fog.color);
-    this.scene.fog = p.fog.density ? new T.FogExp2(fc, p.fog.density) : new T.Fog(fc, p.fog.near, p.fog.far);
-    this.scene.background = fc;
+    // r128 mixed fog in after the sRGB encode, so its linear fog colour displayed darker than the
+    // hex in the preset, and the presets were tuned to that look (dark, moody distant hills in the
+    // monsoon). r187 mixes fog correctly; decoding the colour once more reproduces the r128 look.
+    // Revisit when atmosphere is redesigned (M6).
+    const fogLook = fc.clone().convertSRGBToLinear();
+    this.scene.fog = p.fog.density ? new T.FogExp2(fogLook, p.fog.density) : new T.Fog(fogLook, p.fog.near, p.fog.far);
+    this.scene.background = fogLook;
     this.renderer.toneMappingExposure = p.exposure;
     R.U.wet.value = p.wet; R.U.wind.value = p.wind;
     // mountains: blend each ridge layer toward the horizon colour for aerial perspective
