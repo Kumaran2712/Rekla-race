@@ -133,7 +133,8 @@
   const paintSnd = () => { sndBtn.setAttribute('aria-pressed', String(R.Audio.on)); sndBtn.setAttribute('aria-label', R.Audio.on ? 'Mute sound' : 'Turn sound on'); sndBtn.querySelector('.wave').style.display = R.Audio.on ? '' : 'none'; sndBtn.querySelector('.x').style.display = R.Audio.on ? 'none' : ''; };
   if (R.Audio) {
     const wake = () => { if (R.Audio.on && state !== 'loading') R.Audio.unlock(); };
-    document.addEventListener('pointerdown', wake, true); document.addEventListener('keydown', wake, true);
+    // iOS only accepts touchend / click / keydown as the gesture that starts audio (not touchstart or pointerdown)
+    for (const ev of ['touchend', 'click', 'keydown', 'pointerup']) document.addEventListener(ev, wake, true);
     sndBtn.addEventListener('click', e => { e.stopPropagation(); R.Audio.setOn(!R.Audio.on); paintSnd(); });
     paintSnd();
   } else sndBtn.hidden = true;

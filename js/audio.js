@@ -114,33 +114,61 @@
   let ctx = null, master, sfx, amb, comp;
   const loops = {};
   function toBuffer(arr) { const b = ctx.createBuffer(1, arr.length, SR); b.getChannelData(0).set(arr); return b; }
-  A.unlock = function () {
+  // A tiny silent WAV: playing it through an <audio> element moves iOS into the "playback" audio
+  // session, so the game is audible even with the ringer/silent switch on.
+  function silentWav() {
+    const n = 800, b = new Uint8Array(44 + n), v = new DataView(b.buffer);
+    const w = (o, str) => { for (let i = 0; i < str.length; i++) b[o + i] = str.charCodeAt(i); };
+    w(0, 'RIFF'); v.setUint32(4, 36 + n, true); w(8, 'WAVEfmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+    v.setUint32(24, 8000, true); v.setUint32(28, 8000, true); v.setUint16(32, 1, true); v.setUint16(34, 8, true); w(36, 'data'); v.setUint32(40, n, true);
+    b.fill(128, 44);
+    let bin = ''; for (let i = 0; i < b.length; i++) bin += String.fromCharCode(b[i]);
+    return 'data:audio/wav;base64,' + btoa(bin);
+  }
+  let silentEl = null;
+  function playbackSession() {
+    try { if (navigator.audioSession) { navigator.audioSession.type = 'playback'; return; } } catch (e) {}
     try {
-      if (!ctx) {
-        const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
-        ctx = new AC();
-        A.prepare();
-        for (const k in S) B[k] = Array.isArray(S[k]) ? S[k].map(toBuffer) : toBuffer(S[k]);
-        comp = ctx.createDynamicsCompressor(); comp.threshold.value = -14; comp.ratio.value = 4;
-        master = ctx.createGain(); master.gain.value = A.on ? 0.9 : 0;
-        sfx = ctx.createGain(); amb = ctx.createGain(); amb.gain.value = 0.8;
-        sfx.connect(master); amb.connect(master); master.connect(comp); comp.connect(ctx.destination);
-        for (const k of ['rumble', 'babble', 'cheer', 'rain', 'wind']) {
-          const src = ctx.createBufferSource(); src.buffer = B[k]; src.loop = true;
-          const g = ctx.createGain(); g.gain.value = 0; src.connect(g); g.connect(k === 'rumble' ? sfx : amb);
-          src.start(0, Math.random() * 2); loops[k] = g;
-        }
-        A.ready = true; nextDrum = ctx.currentTime + 0.3;
-      }
-      if (ctx.state === 'suspended') ctx.resume();
-    } catch (e) { A.ready = false; }
+      if (!silentEl) { silentEl = document.createElement('audio'); silentEl.src = silentWav(); silentEl.loop = true; silentEl.setAttribute('playsinline', ''); silentEl.preload = 'auto'; }
+      const p = silentEl.play(); if (p && p.catch) p.catch(() => {});
+    } catch (e) {}
+  }
+  function build() {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) { A.error = 'This browser has no Web Audio support.'; return false; }
+    ctx = new AC();
+    A.prepare();
+    for (const k in S) B[k] = Array.isArray(S[k]) ? S[k].map(toBuffer) : toBuffer(S[k]);
+    comp = ctx.createDynamicsCompressor(); comp.threshold.value = -14; comp.ratio.value = 4;
+    master = ctx.createGain(); master.gain.value = A.on ? 0.9 : 0;
+    sfx = ctx.createGain(); amb = ctx.createGain(); amb.gain.value = 0.8;
+    sfx.connect(master); amb.connect(master); master.connect(comp); comp.connect(ctx.destination);
+    for (const k of ['rumble', 'babble', 'cheer', 'rain', 'wind']) {
+      const src = ctx.createBufferSource(); src.buffer = B[k]; src.loop = true;
+      const g = ctx.createGain(); g.gain.value = 0; src.connect(g); g.connect(k === 'rumble' ? sfx : amb);
+      src.start(0, Math.random() * 2); loops[k] = g;
+    }
+    A.ready = true; nextDrum = ctx.currentTime + 0.3;
+    return true;
+  }
+  // Must run inside a real tap/click/key handler: browsers only let audio start from a user gesture.
+  A.unlock = function () {
+    if (!A.on) return;
+    try {
+      if (!ctx && !build()) return;
+      playbackSession();
+      if (ctx.state !== 'running') { const r = ctx.resume(); if (r && r.catch) r.catch(e => { A.error = String(e); }); }
+      // the classic iOS unlock: start a one-sample buffer straight to the output during the gesture
+      const one = ctx.createBufferSource(); one.buffer = ctx.createBuffer(1, 1, ctx.sampleRate); one.connect(ctx.destination); one.start(0);
+    } catch (e) { A.error = String(e && e.message || e); console.error('Rekla audio:', e); }
   };
+  A.state = () => (ctx ? ctx.state : 'none');
   A.setOn = function (on) {
     A.on = on; try { localStorage.setItem('rekla-sound', on ? 'on' : 'off'); } catch (e) {}
     if (master) master.gain.setTargetAtTime(on ? 0.9 : 0, ctx.currentTime, 0.05);
-    if (on) A.unlock();
+    if (on) A.unlock(); else if (silentEl) silentEl.pause();
   };
-  document.addEventListener('visibilitychange', () => { if (!ctx) return; if (document.hidden) ctx.suspend(); else if (A.on) ctx.resume(); });
+  document.addEventListener('visibilitychange', () => { if (!ctx) return; if (document.hidden) { ctx.suspend(); if (silentEl) silentEl.pause(); } else if (A.on) ctx.resume(); });
 
   function play(name, o = {}) {
     if (!A.ready || !A.on) return;
