@@ -37,7 +37,7 @@ async function main() {
   await shoot('U1-noon');
 
   // Race shots: start, skip the countdown, run the perfect bot to racing speed, then place each shot.
-  await page.evaluate(() => { R.debug.startRace(); R.debug.skip(); window.__frames(2); R.debug.sim(8, 'perfect'); });
+  await page.evaluate(() => { window.__reseed(777); R.debug.startRace(); R.debug.skip(); window.__frames(2); R.debug.sim(8, 'perfect'); });
   for (const p of presets) {
     await page.evaluate(p => R.debug.setAtmo(p), p);
     for (const shot of cams.shots.filter(s => s.phase === 'race')) {

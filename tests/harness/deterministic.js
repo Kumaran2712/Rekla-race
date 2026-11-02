@@ -14,6 +14,10 @@
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 
+  // Re-seed mid-run (used right before a race starts, so race content does not depend on how many
+  // random numbers the engine itself consumed while loading).
+  window.__reseed = s => { a = s >>> 0; };
+
   let now = 1000;
   performance.now = () => now;
 
