@@ -54,3 +54,22 @@ What it will still need, all planned in Blender:
 
 - **Quaternius "LowPoly Animated Farm Animal Pack"** is **CC0**, but it contains a cow, not a bull, and is supplied as Blend, OBJ and FBX ([OpenGameArt](https://opengameart.org/content/lowpoly-animated-farm-animal-pack)). It is good enough to prove GLB loading, `AnimationMixer` and stride-phase locking. It is not a look reference.
 - This sandbox cannot download from asset sites. To use it, attach the file. Until then, the existing procedural bull stays in place.
+
+## Blender adaptation, rigging and animation pipeline (plan only)
+
+This is the plan once a base model is approved and bought. Every step that can be scripted runs headless through Blender's Python module (`bpy`), so the pipeline is reproducible from the repo. The steps that need an artist's eye are marked **(artist)**.
+
+| Step | What happens | Tool | Output | Checked by |
+| --- | --- | --- | --- | --- |
+| 1. Intake | Open the source file. Record the triangle count, bones, clip names and texture sizes in `assets/src/bull/INTAKE.md`. Store the licence PDF privately. | Blender (scripted) | Intake report | Gate 1 evidence |
+| 2. Proportion pass **(artist)** | Overlay side, front and 3/4 reference photos on matching cameras. Adjust body mass, hump (firm, moderate), dewlap and leg length to Kangayam proportions as shape keys, so the base stays recoverable. | Blender sculpt and shape keys | `bull_greybox.blend` | Gate 1: overlay renders, plus the greybox in the game at V1 and V5 |
+| 3. Horns and head **(artist)** | Remodel the horns: spread apart, nearly straight with a slight backward curve (smaller variety first). Refine the muzzle and add the eye rings. | Blender sculpt | High-poly head | Gate 2 |
+| 4. Retopology and LODs | Reduce about 43k triangles to an LOD0 of 12–18k, keeping edge loops at the shoulder, elbow, hip, stifle and neck. LOD1 is 5k and LOD2 1.5k (decimate). | Blender (manual loops plus scripted decimate) | LOD meshes | Gate 2: wireframe renders |
+| 5. Bakes | Bake normal and AO from high to low. Pack ORM. | Blender Cycles bake (scripted) | 2048 maps | Gate 2–3 |
+| 6. Coat repaint **(artist)** | Grey coat with darker head, neck, hump and quarters, black tail switch, and painted horns with brass tips, following bible section 5.1. | Blender texture paint or Krita | Albedo 2048 | Gate 3, in our renderer under noon, golden and rain |
+| 7. Rig check and correctives | Keep about 30 bones; add a scapula slide, corrective shapes and spring bones for the hump, dewlap and tail. Limit to 4 weights per vertex. | Blender | Rigged mesh | Gate 4: range-of-motion clip |
+| 8. Clips | Inspect the 15 clips. Retime or re-key the gallop to the reference footfall order, in place. Set the beat at phase 0 = leading forehoof plant. Write hoof-contact times to `bull.events.json`, because glTF does not export Blender markers. | Blender NLA | Clips + events JSON | Gate 5: side by side with reference video |
+| 9. Export | glTF 2.0 export (+Y up, transforms applied, normalised weights), then `gltfpack -cc -tc` (meshopt + KTX2) and `gltf-transform validate`. | Scripted (`blender -b -P tools/export_bull.py`, then the npm script) | `public/assets/bull/*.glb` | CI: validator, size budget |
+| 10. Integration | Load through `AssetCache` into `R.Models.cart` behind `?bull=glb`. Drive the clip from `c.step` (audit 5b). | Game code | — | Gates 6–7 |
+
+**Equipment note:** steps 2, 3 and 6 need either an artist with Blender or a computer for you. The scripted steps (1, 4, 5, 9) can run here in the cloud sandbox.
