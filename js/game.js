@@ -74,7 +74,8 @@
   }
   let poolI = 0;
   function emit(x, y, z, vx, vy, vz, life, size, hex) {
-    const p = POOL[poolI = (poolI + 1) % POOL.length];
+    const cap = Math.max(16, Math.floor(POOL.length * (R.Q.particles || 1)));
+    const p = POOL[poolI = (poolI + 1) % cap];
     Object.assign(p, { x, y, z, vx, vy, vz, life, max: life, size });
     p.s.material.color.copy(R.col(hex)); p.s.visible = true;
   }
@@ -634,6 +635,8 @@
 
   let turn = 0;
   const local = (x, y, z, out) => P.m.grp.localToWorld(out.set(x, y, z));
+  const springPos = new R.CameraRig.Spring3(), springLook = new R.CameraRig.Spring3();
+  let rigV2 = R.CameraRig.v2;
   function updateCamera(rdt) {
     const lat = latOf(P.lx), spd = clamp(P.v / VMAX, 0, 1);
     const race = state === 'race' || state === 'count' || state === 'done';
@@ -673,12 +676,19 @@
     } else {                           // chase: swing wide of the bend ahead and look into it
       R.frame(P.dist, F); const th0 = F.th; R.frame(P.dist + 25, F);
       turn += (F.th - th0 - turn) * Math.min(1, rdt * 2);
-      const back = 8.3 - spd * 0.9, up = 3.75 - spd * 0.45;
-      R.world(P.dist - back, lat * 0.62 - turn * 12, tmp); tmp.y += up;
-      R.world(P.dist + 10, lat * 0.5 + turn * 18, tmpL); tmpL.y += 1.15;
+      const cp = rigV2 ? R.CameraRig.CHASE.v2 : R.CameraRig.CHASE.v1;   // v1 = the original numbers
+      const back = cp.back + cp.backAtSpeed * spd, up = cp.up + cp.upAtSpeed * spd;
+      R.world(P.dist - back, lat * cp.latFollow - turn * 12, tmp); tmp.y += up;
+      R.world(P.dist + cp.lookAhead, lat * cp.latLook + turn * 18, tmpL); tmpL.y += cp.lookUp;
+      kp = cp.posFreq; kl = cp.lookFreq;
     }
-    const a = snap ? 1 : 1 - Math.exp(-rdt * kp), b = snap ? 1 : 1 - Math.exp(-rdt * kl); snap = false;
-    camPos.lerp(tmp, a); camLook.lerp(tmpL, b);
+    if (rigV2) {                       // critically damped springs (src/camera-rig.js)
+      if (snap) { springPos.reset(tmp); springLook.reset(tmpL); }
+      camPos.copy(springPos.update(tmp, kp, rdt)); camLook.copy(springLook.update(tmpL, kl, rdt)); snap = false;
+    } else {
+      const a = snap ? 1 : 1 - Math.exp(-rdt * kp), b = snap ? 1 : 1 - Math.exp(-rdt * kl); snap = false;
+      camPos.lerp(tmp, a); camLook.lerp(tmpL, b);
+    }
     camera.position.copy(camPos);
     if (shake > 0) camera.position.add(tmp.set(rand(-1, 1), rand(-1, 1), 0).multiplyScalar(shake * 0.35));
     if (race && !reduceMotion && key !== 'photo') {
@@ -686,9 +696,9 @@
       camera.position.x += Math.sin(t * 37) * Math.sin(t * 13) * r; camera.position.y += Math.sin(t * 29 + 1) * Math.sin(t * 7) * r;
     }
     camera.lookAt(camLook);
-    if (race && !reduceMotion && key === 'chase') camera.rotateZ(-turn * 0.6);
+    if (race && !reduceMotion && key === 'chase') camera.rotateZ(-turn * (rigV2 ? R.CameraRig.CHASE.v2 : R.CameraRig.CHASE.v1).rollIntoBends);
     if (R.debug.camOverride) { const o = R.debug.camOverride; camera.position.copy(local(o[0], o[1], o[2], tmp)); camera.lookAt(local(o[3], o[4], o[5], tmpL)); }
-    const fov = baseFov + fovAdd + spd * 9;
+    const fov = baseFov + fovAdd + spd * (rigV2 && key === 'chase' ? R.CameraRig.CHASE.v2.fovAtSpeed : 9);
     if (Math.abs(camera.fov - fov) > 0.05) { camera.fov += (fov - camera.fov) * Math.min(1, rdt * 3); camera.updateProjectionMatrix(); }
     P.m.drv.visible = !P.fallen && !(key === 'eye' && race);
     R.world(P.dist + 6, lat * 0.5, focus);
@@ -786,7 +796,7 @@
   // Fixed 60 Hz simulation (src/sim-clock.js): at most 4 steps per frame, extra backlog dropped.
   // What is drawn is interpolated between the last two steps (alpha), so motion stays smooth at any FPS.
   const clock = new R.SimClock.FixedStepClock(), STEP = R.SimClock.STEP_S;
-  let last = null, frames = 0, acc = 0, slow = 0, fast = 0;
+  let last = null, frames = 0, acc = 0;
   let paused = false, resumeT = 0, glLost = false;
   R.stats = { fps: 0 };
   function savePrev() {
@@ -813,8 +823,11 @@
   function frame(now) {
     requestAnimationFrame(frame);
     if (last === null) last = now;
-    const rdt = Math.min(0.05, (now - last) / 1000); last = now;
+    if (R.Q.fps30 && now - last < 1000 / 30 - 4) return;   // locked-30 tier: draw every other display frame
+    const frameMs = now - last;
+    const rdt = Math.min(0.05, frameMs / 1000); last = now;
     if (glLost) return;
+    if (state !== 'loading') { R.Quality.frame(frameMs, now); R.Stats.frame(frameMs, now); }
     renderer.info.reset();
     let dt = 0;
     if (paused) clock.resync(now);
@@ -836,20 +849,28 @@
     if (R.Crowd) R.Crowd.update(dt, carts, t);
     if (R.Audio) R.Audio.update(dt, { state: paused || resumeT > 0 ? 'paused' : state, carts, P });
     if (R.World.update) R.World.update(dt, camera, t);
-    if (R.Post && R.Post.enabled) R.Post.render(renderer, scene, camera, { speed: clamp(P.v / VMAX, 0, 1), dt });
+    if (R.Stats.enabled) R.Stats.gpuBegin();
+    if (R.debug.noRender) { /* headless timing tests: simulate without drawing */ }
+    else if (R.Post && R.Post.enabled) R.Post.render(renderer, scene, camera, { speed: clamp(P.v / VMAX, 0, 1), dt });
     else renderer.render(scene, camera);
+    if (R.Stats.enabled) R.Stats.gpuEnd();
     restore();
     hud();
     frames++; acc += rdt;
-    if (acc > 1.5) {
-      const fps = frames / acc; R.stats.fps = fps; frames = 0; acc = 0;
-      if (fps < 40) { slow++; fast = 0; } else if (fps > 57) { fast++; slow = 0; } else { slow = fast = 0; }
-      if (slow >= 2 && dpr > 0.75) { dpr = Math.max(0.75, dpr - 0.25); renderer.setPixelRatio(dpr); resize(); slow = 0; }
-      else if (slow >= 2 && R.Post && R.Post.enabled) { R.Post.enabled = false; slow = 0; }
-      else if (slow >= 3 && renderer.shadowMap.enabled && R.Sky.sun.shadow.mapSize.x > 512) { R.Sky.sun.shadow.mapSize.set(512, 512); R.Sky.sun.shadow.map && R.Sky.sun.shadow.map.dispose(); R.Sky.sun.shadow.map = null; slow = 0; }
-      if (fast >= 4 && dpr < Math.min(window.devicePixelRatio || 1, R.Q.dprMax)) { dpr = Math.min(R.Q.dprMax, dpr + 0.25); renderer.setPixelRatio(dpr); resize(); fast = 0; }
-    }
+    if (acc > 1.5) { R.stats.fps = frames / acc; frames = 0; acc = 0; }
   }
+
+  // ---------- quality tiers (src/quality.js): applied at load and whenever the tier changes ----------
+  let builtDensity = 1;
+  function applyQuality() {
+    const q = R.Q;
+    dpr = Math.min(window.devicePixelRatio || 1, q.dprMax); renderer.setPixelRatio(dpr); resize();
+    if (R.Post) { R.Post.enabled = q.post !== 'off'; R.Post.setQuality(q.msaa, q.shafts); }
+    const sun = R.Sky.sun;
+    if (sun && sun.shadow.mapSize.x !== q.shadow) { sun.shadow.mapSize.set(q.shadow, q.shadow); if (sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; } }
+    R.setScatterDensity(q.density / builtDensity);
+  }
+  R.Quality.onChange(() => { if (state !== 'loading') applyQuality(); });
 
   // ---------- pause, resume, lost graphics ----------
   const pauseOv = $('pauseOv');
@@ -895,6 +916,10 @@
     const label = $('bestStart'), btn = $('startBtn');
     btn.disabled = true;
     const step = async (msg, fn) => { label.textContent = msg; btn.textContent = 'Loading…'; await tick(); fn(); };
+    R.Stats.attach(renderer);
+    R.Quality.benchmark(renderer);           // picks a tier unless ?tier= is set or one is remembered
+    dpr = Math.min(window.devicePixelRatio || 1, R.Q.dprMax); renderer.setPixelRatio(dpr);
+    builtDensity = R.Q.density;
     R.Models.init();
     R.Sky.init(renderer, scene);
     let maps, grain, detail;
@@ -917,6 +942,8 @@
     resize();
     new ResizeObserver(resize).observe(stage);
     state = 'ready';
+    R.Stats.loadMs = Math.round(performance.now());
+    applyQuality();
     btn.disabled = false; btn.textContent = 'Start race';
     paintMenu();
     requestAnimationFrame(t0 => { last = t0; requestAnimationFrame(frame); });
@@ -926,6 +953,8 @@
     setAtmo: id => { atmo = id; applyAtmo(); }, setMode: m => { setup.mode = m; reset(); }, setCam: i => { setup.cam = i; snap = true; },
     jump: s => { if (P) { P.dist = s; snap = true; forgetPrev(); } }, skip: () => { countT = 0.01; },
     // M1 test hooks: timestamped taps, judgement log, clock, lifecycle
+    setCamRig: on => { rigV2 = !!on; R.CameraRig.v2 = !!on; snap = true; }, get camRig() { return rigV2 ? 'v2' : 'v1'; },
+    setTier: n => R.Quality.set(n, 'debug'),
     tapAt: ts => queueInput('hai', 0, ts), steerAt: (dir, ts) => queueInput('steer', dir, ts), judgeLog,
     get clock() { return { simWall: clock.simWall, alpha: clock.alpha, capHits: clock.capHits, droppedMs: clock.droppedMs }; },
     get raceSeed() { return raceSeed; }, get paused() { return paused; }, get resumeT() { return resumeT; },

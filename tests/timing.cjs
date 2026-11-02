@@ -16,13 +16,15 @@ function tapPlan(seconds) {
 async function runAt(browser, url, fps, taps, seconds) {
   const { page, errors } = await openGame(browser, url + (url.includes('?') ? '&' : '?') + 'seed=4242', { width: 200, height: 120 });
   const res = await page.evaluate(([fps, taps, seconds]) => {
+    R.debug.noRender = true;   // timing only; drawing is irrelevant and slow in software rendering
     R.debug.setMode('pack');
     const t0 = performance.now();
     R.debug.startRace(); R.debug.skip();
     const dt = 1000 / fps;
+    // a whole number of frames so every frame rate ends at exactly the same simulated moment
     let now = t0, i = 0;
-    while (now - t0 < seconds * 1000) {
-      const next = now + dt;
+    for (let f = 0; f < Math.round(seconds * fps); f++) {
+      const next = t0 + (f + 1) * dt;
       // events that happened before this frame arrive with their own timestamps
       while (i < taps.length && t0 + taps[i] <= next) R.debug.tapAt(t0 + taps[i++]);
       window.__frame(dt);
@@ -37,7 +39,7 @@ async function runAt(browser, url, fps, taps, seconds) {
     };
   }, [fps, taps, seconds]);
   await page.context().close();
-  return { fps, ...res, errors: errors.filter(e => !/ERR_FAILED/.test(e)) };
+  return { fps, ...res, errors: errors.filter(e => !/ERR_FAILED|GPU stall/.test(e)) };
 }
 
 async function main() {

@@ -95,6 +95,7 @@
     const c = new T.Vector3(cx / n, cy / n, cz / n);
     let r = 0; spots.forEach(s => { r = Math.max(r, Math.hypot(s.x - c.x, s.y - c.y, s.z - c.z)); });
     g.boundingSphere = new T.Sphere(c, r + 2);
+    im.boundingSphere = g.boundingSphere.clone(); // r151+ culls instanced meshes by this sphere
     im.castShadow = false; im.receiveShadow = true;
     scene.add(im);
     C.meshes.push(im);
@@ -292,7 +293,7 @@
   C.update = function (dt, carts) {
     if (!carts || !carts.length) return;
     const cp = R.camera.position;
-    for (const m of C.meshes) { const b = m.geometry.boundingSphere; m.visible = cp.distanceTo(b.center) - b.radius < 230; }
+    for (const m of C.meshes) { const b = m.geometry.boundingSphere; m.visible = cp.distanceTo(b.center) - b.radius < (R.Q.crowdFar || 230); }
     const p = carts.find(c => c.player), lead = carts.reduce((a, c) => (c.dist > a.dist ? c : a), carts[0]);
     if (p && p.m) C.focus.value.copy(p.m.grp.position);
     if (lead && lead.m) C.focus2.value.copy(lead.m.grp.position);

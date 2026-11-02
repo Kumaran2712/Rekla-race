@@ -19,7 +19,7 @@
 
   W.build = function (scene) {
     // rain
-    const n = R.Q.mobile ? 1400 : 2600, pos = new Float32Array(n * 6), end = new Float32Array(n * 2);
+    const n = R.Q.lite ? 1400 : 2600, pos = new Float32Array(n * 6), end = new Float32Array(n * 2);
     for (let i = 0; i < n; i++) {
       const x = Math.random() * 46, y = Math.random() * 24, z = Math.random() * 46;
       pos.set([x, y, z, x, y, z], i * 6); end[i * 2] = 0; end[i * 2 + 1] = 1;

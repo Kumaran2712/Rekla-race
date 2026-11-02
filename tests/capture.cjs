@@ -1,5 +1,5 @@
 // Captures the fixed gate shots (tests/cameras.json) from a running build.
-// Usage: node tests/capture.cjs <url> <outDir> [land|port] [presets,comma,separated]
+// Usage: node tests/capture.cjs <url> <outDir> [land|port] [presets,comma,separated|all] [extra query, e.g. tier=3]
 const fs = require('fs');
 const path = require('path');
 const { ROOT, launch, openGame, bendApex, renderInfo } = require('./lib/page.cjs');
@@ -7,8 +7,9 @@ const { ROOT, launch, openGame, bendApex, renderInfo } = require('./lib/page.cjs
 const cams = JSON.parse(fs.readFileSync(path.join(ROOT, 'tests/cameras.json'), 'utf8'));
 
 async function main() {
-  const [url, outDir, vpName = 'land', presetArg] = process.argv.slice(2);
-  const presets = presetArg ? presetArg.split(',') : cams.presets;
+  const [baseUrl, outDir, vpName = 'land', presetArg, query] = process.argv.slice(2);
+  const presets = presetArg && presetArg !== 'all' ? presetArg.split(',') : cams.presets;
+  const url = query ? baseUrl + (baseUrl.includes('?') ? '&' : '?') + query : baseUrl;
   const viewport = cams.viewports[vpName];
   const dir = path.join(outDir, vpName);
   fs.mkdirSync(dir, { recursive: true });
@@ -20,7 +21,7 @@ async function main() {
   const manifest = { url, viewport: vpName, bendApex: apex, loadMsHeadless: loadMs, shots: {} };
   const shoot = async (name) => {
     await page.evaluate(() => window.__frames(4));
-    await page.screenshot({ path: path.join(dir, name + '.png') });
+    await page.screenshot({ path: path.join(dir, name + '.png'), timeout: 240000 });
     manifest.shots[name] = await renderInfo(page);
     process.stdout.write('.');
   };

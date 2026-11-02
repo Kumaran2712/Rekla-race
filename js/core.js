@@ -51,8 +51,9 @@
   Object.assign(R, { clamp, lerp, smooth, rng, rand, pick, mulberry32, hash2, noise2, fbm, col });
 
   // ---------- quality tier ----------
-  const mobile = /[?&]mobile/.test(location.search) || Math.min(screen.width, screen.height) < 760 || /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent);
-  R.Q = { mobile, shadow: mobile ? 1024 : 2048, dprMax: mobile ? 1.5 : 2, density: mobile ? 0.6 : 1, terrainCell: mobile ? 6 : 5 };
+  // Settings come from src/quality.js: a tier chosen by a warm-up benchmark (or ?tier=N, or remembered),
+  // no longer a guess from the user agent. R.Q.lite replaces the old R.Q.mobile.
+  if (!R.Q || R.Q.tier === undefined) throw new Error('src/quality.js must be imported before js/core.js');
 
   // shared animated uniforms (wind, time) used by foliage, flags, crowd, water
   R.U = { time: { value: 0 }, wind: { value: 1 } };
@@ -296,13 +297,22 @@
           if (geo.index) g.setIndex(geo.index);
           g.boundingSphere = new T.Sphere(center, Math.sqrt(r2) + (bs.radius + bs.center.length()) * smax);
           const im = new T.InstancedMesh(g, layer.mat, n);
+          im.boundingSphere = g.boundingSphere.clone(); // r151+ culls instanced meshes by this sphere
           im.instanceMatrix.array.set(c.m);
+          im.userData.full = n;
           if (c.c.length) im.instanceColor = new T.InstancedBufferAttribute(new Float32Array(c.c), 3);
           im.castShadow = !!layer.cast; im.receiveShadow = layer.receive !== false;
           im.matrixAutoUpdate = false;
           scene.add(im);
           return im;
         };
+        // shuffle instance order (deterministically) so a lower runtime density drops a random subset
+        const shuf = mulberry32(c.k * 9973 + n), cols = c.c.length ? 3 : 0;
+        for (let i = n - 1; i > 0; i--) {
+          const j = (shuf() * (i + 1)) | 0;
+          for (let q = 0; q < 16; q++) { const t = c.m[i * 16 + q]; c.m[i * 16 + q] = c.m[j * 16 + q]; c.m[j * 16 + q] = t; }
+          for (let q = 0; q < cols; q++) { const t = c.c[i * 3 + q]; c.c[i * 3 + q] = c.c[j * 3 + q]; c.c[j * 3 + q] = t; }
+        }
         for (const L of this.layers) {
           entry.hi.push(mk(L.geo, L));
           if (L.lo) entry.lo.push(mk(L.lo, L));
@@ -323,6 +333,11 @@
     }
   }
   R.Scatter = Scatter;
+  // Runtime density for the quality ladder: draw only a fraction of each chunk's (shuffled) instances.
+  R.setScatterDensity = f => {
+    const k = Math.min(1, Math.max(0.1, f));
+    for (const s of scatters) for (const e of s.built) for (const m of [...e.hi, ...e.lo]) m.count = Math.max(1, Math.ceil(m.userData.full * k));
+  };
   R.updateScatters = camS => { for (const s of scatters) s.update(camS); };
   R.scatterStats = () => scatters.reduce((a, s) => a + s.built.length, 0);
 

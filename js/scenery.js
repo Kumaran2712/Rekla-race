@@ -649,17 +649,17 @@
     const batch = new R.Batch(160);
 
     // ---------- scatter definitions ----------
-    const LOD = R.Q.mobile ? 85 : 120;
+    const LOD = R.Q.lite ? 85 : 120;
     const coco = [1].map(v => { const a = coconut(10.5 + v * 2.5, 0.7 + v * 0.6, 13, 11 + v); const lo = coconut(10.5 + v * 2.5, 0.7 + v * 0.6, 7, 11 + v, true); return new R.Scatter([{ geo: a.trunk, mat: M.trunk, cast: true, lo: lo.trunk }, { geo: a.crown, mat: M.frond, cast: true, lo: lo.crown }], { chunk: 80, far: 1100, lod: LOD }); });
     const palm = [0].map(v => { const a = palmyra(12 + v * 3, 21 + v), lo = palmyra(12 + v * 3, 21 + v, true); return new R.Scatter([{ geo: a.trunk, mat: M.trunk, cast: true, lo: lo.trunk }, { geo: a.crown, mat: M.fan, cast: true, lo: lo.crown }], { chunk: 100, far: 1100, lod: LOD }); });
     const ban = [1].map(v => { const a = banana(31 + v, v === 1), lo = banana(31 + v, false, true); return new R.Scatter([{ geo: a.stem, mat: M.trunk, cast: true, lo: lo.stem }, { geo: a.leaves, mat: M.banana, cast: true, lo: lo.leaves }], { chunk: 40, far: 300, lod: 60 }); });
     const nm = [0].map(v => { const a = neem(41 + v, 46); const lo = neem(41 + v, 16, true); return new R.Scatter([{ geo: a.wood, mat: M.trunk, cast: true, lo: lo.wood }, { geo: a.canopy, mat: M.leaves, cast: true, lo: lo.canopy }], { chunk: 160, far: 1100, lod: LOD }); });
-    const grass = new R.Scatter([{ geo: tuft(0.7, 0.55, 3), mat: M.grass }], { chunk: 60, far: R.Q.mobile ? 70 : 105 });
+    const grass = new R.Scatter([{ geo: tuft(0.7, 0.55, 3), mat: M.grass }], { chunk: 60, far: R.Q.lite ? 70 : 105 });
     const tall = new R.Scatter([{ geo: tuft(1.1, 1.0, 3), mat: M.grass, cast: true }], { chunk: 80, far: 180 });
-    const pad = new R.Scatter([{ geo: paddyPatch(), mat: M.paddy }], { chunk: 50, far: R.Q.mobile ? 70 : 100 });
+    const pad = new R.Scatter([{ geo: paddyPatch(), mat: M.paddy }], { chunk: 50, far: R.Q.lite ? 70 : 100 });
     const caneC = [0].map(v => { const a = caneClump(51 + v), lo = caneClump(51 + v, true); return new R.Scatter([{ geo: a.stalks, mat: M.trunk, lo: lo.stalks }, { geo: a.leaves, mat: M.caneLeaf, cast: true, lo: lo.leaves }], { chunk: 30, far: 170, lod: 45 }); });
     const rocks = [0, 1, 2].map(v => new R.Scatter([{ geo: rock(61 + v, v === 2 ? [1.6, 1.0, 1.3] : [1, 0.7, 0.9]), mat: M.rock, cast: true }], { chunk: 150, far: 900 }));
-    const pebble = new R.Scatter([{ geo: rock(71, [0.12, 0.08, 0.1], 0), mat: M.rock }], { chunk: 40, far: R.Q.mobile ? 45 : 70 });
+    const pebble = new R.Scatter([{ geo: rock(71, [0.12, 0.08, 0.1], 0), mat: M.rock }], { chunk: 40, far: R.Q.lite ? 45 : 70 });
     const egrets = new R.Scatter([{ geo: egret(), mat: M.paint, cast: true }], { chunk: 100, far: 260 });
 
     const put = (sc, s, d, opts = {}) => {

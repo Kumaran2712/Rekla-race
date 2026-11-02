@@ -1,6 +1,10 @@
 // Entry point. Imports the original modules in the same order index.html loaded them before Vite.
 // ES modules evaluate imports in order, so three-global.js runs first.
 import './three-global.js';
+import './quality.js';
+import './asset-cache.js';
+import './stats.js';
+import './camera-rig.js';
 import '../js/core.js';
 import '../js/textures.js';
 import '../js/sky.js';

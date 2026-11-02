@@ -20,9 +20,10 @@
         c = acc / 6.0;
       }
       if (uRays > 0.01 && uSunVis > 0.01) {
-        vec2 d = (uv - uSun) * (0.85 / 16.0);
+        vec2 d = (uv - uSun) * (0.85 / uSamples);
         vec2 p = uv; float illum = 0.0, decay = 1.0;
         for (int i = 0; i < 16; i++) {
+          if (float(i) >= uSamples) break;   // 16 on high tiers, 8 on 'lite'
           p -= d;
           float inside = step(abs(p.x - 0.5), 0.5) * step(abs(p.y - 0.5), 0.5);
           vec3 s = disp(clamp(p, 0.0, 1.0));
@@ -47,7 +48,7 @@
     // pass below applies tone mapping and sRGB output itself before grading (as r128 did for us).
     this.rt = new T.WebGLRenderTarget(4, 4, {
       minFilter: T.LinearFilter, magFilter: T.LinearFilter, format: T.RGBAFormat, type: T.HalfFloatType,
-      depthBuffer: true, stencilBuffer: false, samples: R.Q.mobile ? 2 : 4,
+      depthBuffer: true, stencilBuffer: false, samples: R.Q.msaa,
     });
     this.u = {
       tDiffuse: { value: this.rt.texture }, uRes: { value: new T.Vector2(1, 1) }, uSun: { value: new T.Vector2(0.5, 0.5) },
@@ -59,6 +60,12 @@
     this.qs = new T.Scene(); this.qs.add(this.quad);
     this.qc = new T.OrthographicCamera(-1, 1, 1, -1, 0, 1);
     this.tmp = new T.Vector3(); this.fwd = new T.Vector3();
+  };
+  // Quality tier hook: MSAA sample count (render target re-created when it changes) and sun-shaft taps.
+  Post.setQuality = function (msaa, shafts) {
+    if (!this.rt) return;
+    if (this.rt.samples !== msaa) { this.rt.dispose(); this.rt.samples = msaa; }
+    this.u.uSamples.value = Math.max(1, shafts || 16);
   };
   Post.resize = function (w, h, dpr) {
     if (!this.rt) return;
