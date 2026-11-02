@@ -1,0 +1,7 @@
+{
+  "_note": "Gameplay balance bounds from the r128 baseline (tests/baseline/sim-r128.json, 5 runs per case, seed 12345). A build fails the balance test if any run falls outside these bounds. Widen only with written sign-off.",
+  "pack-perfect": { "finMin": 48.0, "finMax": 53.0, "maxRank": 1 },
+  "pack-sloppy": { "finMin": 56.0, "finMax": 68.0, "minWorstRank": 3 },
+  "trial-perfect": { "finMin": 18.5, "finMax": 21.0 },
+  "trial-sloppy": { "finMin": 21.5, "finMax": 27.0 }
+}

@@ -1,0 +1,128 @@
+{
+  "_note": "Fixed gate cameras (audit section 8a). Frozen at M0: never edit values; add new shots with new ids instead. 'override' = [camX, camY, camZ, lookX, lookY, lookZ] in the player cart's local frame (metres, -z is forward). A null override uses the game's own camera mode 'cam' (index into CAMS) with a snap.",
+  "presets": [
+    "noon",
+    "golden",
+    "monsoon",
+    "rain",
+    "mist"
+  ],
+  "viewports": {
+    "land": {
+      "width": 1280,
+      "height": 720
+    },
+    "port": {
+      "width": 390,
+      "height": 844
+    }
+  },
+  "shots": [
+    {
+      "id": "V1",
+      "name": "Hero 3/4 at the start line",
+      "phase": "menu",
+      "override": [
+        -3.2,
+        1.6,
+        -7.0,
+        0,
+        1.3,
+        -2.6
+      ]
+    },
+    {
+      "id": "V2",
+      "name": "Chase, straight",
+      "phase": "race",
+      "s": 200,
+      "cam": 0,
+      "override": null
+    },
+    {
+      "id": "V3",
+      "name": "Chase, sharpest bend (apex computed once from the track: s=742)",
+      "phase": "race",
+      "s": 742,
+      "cam": 0,
+      "override": null
+    },
+    {
+      "id": "V4",
+      "name": "Low, beside the near bull's legs",
+      "phase": "race",
+      "s": 260,
+      "override": [
+        1.6,
+        0.5,
+        -2.2,
+        0.3,
+        0.7,
+        -2.9
+      ]
+    },
+    {
+      "id": "V5",
+      "name": "Side-on gait",
+      "phase": "race",
+      "s": 320,
+      "override": [
+        6.5,
+        1.4,
+        -1.8,
+        0,
+        1.0,
+        -1.8
+      ]
+    },
+    {
+      "id": "V6",
+      "name": "Village stretch",
+      "phase": "race",
+      "s": 420,
+      "override": [
+        -2.2,
+        1.8,
+        4.0,
+        -6,
+        2.2,
+        -30
+      ]
+    },
+    {
+      "id": "V7",
+      "name": "Finish barricade crowd",
+      "phase": "race",
+      "s": 770,
+      "override": [
+        -1.5,
+        1.7,
+        2.0,
+        10,
+        1.6,
+        -18
+      ]
+    },
+    {
+      "id": "V8",
+      "name": "Drone toward the hills",
+      "phase": "race",
+      "s": 200,
+      "override": [
+        0,
+        40,
+        25,
+        0,
+        0,
+        -160
+      ]
+    }
+  ],
+  "ui": [
+    {
+      "id": "U1",
+      "name": "Start card (menu)",
+      "phase": "menu"
+    }
+  ]
+}
