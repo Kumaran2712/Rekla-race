@@ -14,7 +14,7 @@
     "compare": "node tests/compare.cjs"
   },
   "dependencies": {
-    "three": "0.128.0"
+    "three": "0.187.0"
   },
   "devDependencies": {
     "playwright": "1.63.0",

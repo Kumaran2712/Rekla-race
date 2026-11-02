@@ -115,16 +115,17 @@
     mat.onBeforeCompile = sh => {
       sh.uniforms.uAsph = { value: maps.asphalt }; sh.uniforms.uGrain = { value: grain }; sh.uniforms.uWet = R.U.wet;
       sh.vertexShader = 'attribute float aSurf; varying float vSurf;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n vSurf = aSurf;');
-      sh.fragmentShader = 'uniform sampler2D uAsph; uniform sampler2D uGrain; uniform float uWet; varying float vSurf;\n' + sh.fragmentShader
+      sh.fragmentShader = 'uniform sampler2D uAsph; uniform sampler2D uGrain; uniform float uWet; varying float vSurf;\n' +
+        'vec3 rkSRGBToLinear(vec3 c){ return mix(c * 0.0773993808, pow(c * 0.9478672986 + 0.0521327014, vec3(2.4)), step(0.04045, c)); }\n' + sh.fragmentShader
         .replace('#include <map_fragment>', `#include <map_fragment>
-          vec4 asp = texture2D(uAsph, vUv);
+          vec4 asp = texture2D(uAsph, vMapUv);
           float am = vSurf * asp.a;
-          diffuseColor.rgb = mix(diffuseColor.rgb, sRGBToLinear(vec4(asp.rgb, 1.0)).rgb, am);
-          vec4 grn = texture2D(uGrain, vUv * vec2(9.0, 7.0));
-          vec4 mac = texture2D(uGrain, vUv * vec2(0.6, 0.11));
+          diffuseColor.rgb = mix(diffuseColor.rgb, rkSRGBToLinear(asp.rgb), am);
+          vec4 grn = texture2D(uGrain, vMapUv * vec2(9.0, 7.0));
+          vec4 mac = texture2D(uGrain, vMapUv * vec2(0.6, 0.11));
           diffuseColor.rgb *= (0.88 + 0.24 * grn.r) * (0.84 + 0.32 * mac.g);
-          float hgt = texture2D(normalMap, vUv).a;
-          float edgeU = abs(vUv.x - 0.5) * 2.0;
+          float hgt = texture2D(normalMap, vNormalMapUv).a;
+          float edgeU = abs(vMapUv.x - 0.5) * 2.0;
           float pud = uWet * smoothstep(0.44, 0.34, hgt) * (1.0 - smoothstep(0.52, 0.6, edgeU)) * smoothstep(0.3, 0.55, mac.b + uWet * 0.2);
           diffuseColor.rgb *= mix(vec3(1.0), vec3(0.56, 0.5, 0.47), uWet * 0.85);
           diffuseColor.rgb *= mix(1.0, 0.62, pud);`)

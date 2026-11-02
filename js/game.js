@@ -42,10 +42,10 @@
   R.renderer = renderer;
   let dpr = Math.min(window.devicePixelRatio || 1, R.Q.dprMax);
   renderer.setPixelRatio(dpr);
-  renderer.outputEncoding = T.sRGBEncoding;
+  renderer.outputColorSpace = T.SRGBColorSpace;
   renderer.toneMapping = T.ACESFilmicToneMapping;
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = T.PCFSoftShadowMap;
+  renderer.shadowMap.type = T.PCFShadowMap; // PCFSoftShadowMap was removed (r180+); softness comes from sun.shadow.radius
   R.maxAniso = Math.min(8, renderer.capabilities.getMaxAnisotropy());
   renderer.info.autoReset = false;
 
@@ -735,7 +735,7 @@
     const g = new T.Group(), Fr = R.frame(MODES.trial.len, {});
     g.position.set(Fr.x, Fr.y, Fr.z); g.rotation.y = -Fr.th;
     const c = document.createElement('canvas'); c.width = 1024; c.height = 128;
-    const tex = new T.CanvasTexture(c); tex.encoding = T.sRGBEncoding;
+    const tex = new T.CanvasTexture(c); tex.colorSpace = T.SRGBColorSpace;
     const paint = () => { const x = c.getContext('2d'); x.fillStyle = '#1f6b3a'; x.fillRect(0, 0, 1024, 128); x.fillStyle = '#f3a312'; x.fillRect(0, 0, 1024, 10); x.fillRect(0, 118, 1024, 10); x.fillStyle = '#fff3d6'; x.font = "800 70px 'Baloo Thambi 2', sans-serif"; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('முடிவு  ·  300 m', 512, 70); tex.needsUpdate = true; };
     paint(); if (document.fonts && document.fonts.ready) document.fonts.ready.then(paint);
     const pole = new T.MeshStandardMaterial({ color: R.col('#5a3418'), roughness: 0.9 });

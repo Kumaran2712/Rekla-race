@@ -117,7 +117,7 @@
   }
   function textTex(w, h, draw) {
     const c = document.createElement('canvas'); c.width = w; c.height = h;
-    const t = new T.CanvasTexture(c); t.encoding = T.sRGBEncoding; t.anisotropy = R.maxAniso;
+    const t = new T.CanvasTexture(c); t.colorSpace = T.SRGBColorSpace; t.anisotropy = R.maxAniso;
     const p = () => { draw(c.getContext('2d'), w, h); t.needsUpdate = true; }; p();
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(p);
     return t;

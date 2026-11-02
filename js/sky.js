@@ -79,7 +79,7 @@
       c += uSunCol * disc * 9.0;
       gl_FragColor = vec4(c, 1.0);
       #include <tonemapping_fragment>
-      #include <encodings_fragment>
+      #include <colorspace_fragment>
     }`;
 
   const Sky = R.Sky = {};
@@ -121,8 +121,8 @@
     u.uZenith.value.copy(col(p.zenith)); u.uHorizon.value.copy(col(p.horizon)); u.uGround.value.copy(col(p.ground));
     u.uSunDir.value.copy(p.sun); u.uSunCol.value.copy(col(p.sunCol)); u.uCloudCol.value.copy(col(p.cloudCol));
     u.uCloudShade.value.copy(col(p.cloudShade)); u.uCloud.value = p.cloud; u.uSunSize.value = p.sunSize; u.uHaze.value = p.haze;
-    this.sun.color.copy(col(p.sunCol)); this.sun.intensity = p.sunI;
-    this.hemi.color.copy(col(p.hemiSky)); this.hemi.groundColor.copy(col(p.hemiGround)); this.hemi.intensity = p.hemiI;
+    this.sun.color.copy(col(p.sunCol)); this.sun.intensity = p.sunI * Math.PI; // r128 legacy units x PI
+    this.hemi.color.copy(col(p.hemiSky)); this.hemi.groundColor.copy(col(p.hemiGround)); this.hemi.intensity = p.hemiI * Math.PI;
     const fc = col(p.fog.color);
     this.scene.fog = p.fog.density ? new T.FogExp2(fc, p.fog.density) : new T.Fog(fc, p.fog.near, p.fog.far);
     this.scene.background = fc;

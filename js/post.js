@@ -8,14 +8,15 @@
   const fs = `uniform sampler2D tDiffuse; uniform vec2 uRes, uSun; uniform vec3 uRayCol;
     uniform float uSunVis, uRays, uSpeed, uSat, uWarm, uContrast, uVig, uSamples;
     varying vec2 vUv;
+    vec3 disp(vec2 p){ return linearToOutputTexel(vec4(toneMapping(texture2D(tDiffuse, p).rgb), 1.0)).rgb; }
     void main(){
       vec2 uv = vUv;
-      vec3 c = texture2D(tDiffuse, uv).rgb;
+      vec3 c = disp(uv);
       if (uSpeed > 0.02) {
         vec2 dir = uv - vec2(0.5, 0.56);
         float k = uSpeed * 0.016 * smoothstep(0.18, 0.75, length(dir));
         vec3 acc = c;
-        for (int i = 1; i < 6; i++) acc += texture2D(tDiffuse, uv - dir * k * float(i)).rgb;
+        for (int i = 1; i < 6; i++) acc += disp(uv - dir * k * float(i));
         c = acc / 6.0;
       }
       if (uRays > 0.01 && uSunVis > 0.01) {
@@ -24,7 +25,7 @@
         for (int i = 0; i < 16; i++) {
           p -= d;
           float inside = step(abs(p.x - 0.5), 0.5) * step(abs(p.y - 0.5), 0.5);
-          vec3 s = texture2D(tDiffuse, clamp(p, 0.0, 1.0)).rgb;
+          vec3 s = disp(clamp(p, 0.0, 1.0));
           illum += max(dot(s, vec3(0.333)) - 0.7, 0.0) * decay * inside;
           decay *= 0.93;
         }
@@ -42,11 +43,12 @@
 
   const Post = R.Post = { enabled: true };
   Post.init = function (renderer) {
-    const gl2 = renderer.capabilities.isWebGL2;
-    const opts = { minFilter: T.LinearFilter, magFilter: T.LinearFilter, format: T.RGBAFormat, depthBuffer: true, stencilBuffer: false };
-    this.rt = gl2 ? new T.WebGLMultisampleRenderTarget(4, 4, opts) : new T.WebGLRenderTarget(4, 4, opts);
-    if (gl2) this.rt.samples = R.Q.mobile ? 2 : 4;
-    this.rt.texture.encoding = T.sRGBEncoding;
+    // three r153+ renders to targets in linear HDR without tone mapping, so the target is half-float and the
+    // pass below applies tone mapping and sRGB output itself before grading (as r128 did for us).
+    this.rt = new T.WebGLRenderTarget(4, 4, {
+      minFilter: T.LinearFilter, magFilter: T.LinearFilter, format: T.RGBAFormat, type: T.HalfFloatType,
+      depthBuffer: true, stencilBuffer: false, samples: R.Q.mobile ? 2 : 4,
+    });
     this.u = {
       tDiffuse: { value: this.rt.texture }, uRes: { value: new T.Vector2(1, 1) }, uSun: { value: new T.Vector2(0.5, 0.5) },
       uRayCol: { value: new T.Color(1, 0.9, 0.7) }, uSunVis: { value: 0 }, uRays: { value: 0 }, uSpeed: { value: 0 },
@@ -66,7 +68,7 @@
   Post.apply = function (p) {
     if (!this.u) return;
     this.u.uSat.value = p.grade.sat; this.u.uWarm.value = p.grade.warm; this.u.uContrast.value = p.grade.contrast; this.u.uVig.value = p.grade.vig;
-    this.u.uRays.value = p.rays; this.u.uRayCol.value.set(p.sunCol);
+    this.u.uRays.value = p.rays; this.u.uRayCol.value.setStyle(p.sunCol, T.LinearSRGBColorSpace); // display-space colour, as in r128
   };
   Post.render = function (renderer, scene, camera, o) {
     // where is the sun on screen, and is it in front of us?

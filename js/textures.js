@@ -11,7 +11,7 @@
     tx.wrapS = tx.wrapT = repeat ? T.RepeatWrapping : T.ClampToEdgeWrapping;
     tx.generateMipmaps = true; tx.minFilter = T.LinearMipmapLinearFilter; tx.magFilter = T.LinearFilter;
     tx.anisotropy = R.maxAniso || 4;
-    tx.encoding = srgb ? T.sRGBEncoding : T.LinearEncoding;
+    tx.colorSpace = srgb ? T.SRGBColorSpace : T.NoColorSpace;
     tx.needsUpdate = true;
     return tx;
   }

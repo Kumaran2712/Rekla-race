@@ -46,7 +46,7 @@
     }
     return s / n;
   }
-  const col = h => new T.Color(h).convertSRGBToLinear();
+  const col = h => new T.Color(h); // hex is sRGB; three's colour management converts to linear (r152+)
 
   Object.assign(R, { clamp, lerp, smooth, rng, rand, pick, mulberry32, hash2, noise2, fbm, col });
 
@@ -342,7 +342,7 @@
         transformed.z += cos(wph * 0.8) * wk * 0.6;`);
       // keep alpha-tested foliage full at distance (mipmapping thins it out otherwise)
       sh.fragmentShader = sh.fragmentShader.replace('#include <alphatest_fragment>',
-        '#ifdef ALPHATEST\n if ( diffuseColor.a < ALPHATEST * mix(1.0, 0.38, smoothstep(20.0, 200.0, length(vViewPosition))) ) discard;\n#endif');
+        '#ifdef USE_ALPHATEST\n if ( diffuseColor.a < alphaTest * mix(1.0, 0.38, smoothstep(20.0, 200.0, length(vViewPosition))) ) discard;\n#endif');
     };
     material.customProgramCacheKey = () => 'wind' + key;
     return material;

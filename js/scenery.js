@@ -184,7 +184,7 @@
       }
       return R.dataTex(d, W, W, false);
     })();
-    const textTex = (w, h, draw) => { const c = document.createElement('canvas'); c.width = w; c.height = h; const t = new T.CanvasTexture(c); t.encoding = T.sRGBEncoding; t.anisotropy = R.maxAniso; const p = () => { draw(c.getContext('2d'), w, h); t.needsUpdate = true; }; p(); if (document.fonts && document.fonts.ready) document.fonts.ready.then(p); return t; };
+    const textTex = (w, h, draw) => { const c = document.createElement('canvas'); c.width = w; c.height = h; const t = new T.CanvasTexture(c); t.colorSpace = T.SRGBColorSpace; t.anisotropy = R.maxAniso; const p = () => { draw(c.getContext('2d'), w, h); t.needsUpdate = true; }; p(); if (document.fonts && document.fonts.ready) document.fonts.ready.then(p); return t; };
     S.textTex = textTex;
     tx.teaSign = textTex(512, 160, (g, w, h) => {
       g.fillStyle = '#f2c230'; g.fillRect(0, 0, w, h); g.fillStyle = '#b3261e'; g.fillRect(0, h - 14, w, 14);

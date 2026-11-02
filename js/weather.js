@@ -42,7 +42,7 @@
     this.birdN = 12;
     const bp = new Float32Array(this.birdN * 9 * 2);
     const bg = new T.BufferGeometry(); bg.setAttribute('position', new T.BufferAttribute(bp, 3));
-    this.birds = new T.Mesh(bg, new T.MeshBasicMaterial({ color: 0x2a2420, side: T.DoubleSide }));
+    this.birds = new T.Mesh(bg, new T.MeshBasicMaterial({ color: new T.Color().setHex(0x2a2420, T.LinearSRGBColorSpace), side: T.DoubleSide }));
     this.birds.frustumCulled = false; scene.add(this.birds);
     this.birdData = Array.from({ length: this.birdN }, (_, i) => ({ c: 80 + i * 60 + Math.random() * 30, d: (Math.random() - 0.5) * 120, r: 18 + Math.random() * 30, h: 28 + Math.random() * 25, ph: Math.random() * 6, sp: 0.15 + Math.random() * 0.12, fl: Math.random() * 6 }));
     this.p = { rain: 0, mist: 0 };
@@ -54,7 +54,7 @@
     this.rainU.uAlpha.value = 0.55 * p.rain;
     const fc = R.col(p.fog.color);
     this.mist.forEach(s => { s.material.color.copy(fc).lerp(new T.Color(1, 1, 1), 0.35); s.visible = p.mist > 0; });
-    this.birds.material.color.set(p.rain ? '#3a3a38' : '#2a2420');
+    this.birds.material.color.setStyle(p.rain ? '#3a3a38' : '#2a2420', T.LinearSRGBColorSpace); // r128 used these as raw values
   };
 
   const F = {}, v = new T.Vector3();
