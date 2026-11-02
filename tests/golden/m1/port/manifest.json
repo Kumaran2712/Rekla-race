@@ -1,0 +1,65 @@
+{
+  "url": "http://localhost:4009/?tier=3&seed=777",
+  "viewport": "port",
+  "bendApex": 742,
+  "loadMsHeadless": 5957,
+  "shots": {
+    "V1-noon": {
+      "calls": 404,
+      "triangles": 527464,
+      "geometries": 155,
+      "textures": 26
+    },
+    "U1-noon": {
+      "calls": 454,
+      "triangles": 593090,
+      "geometries": 177,
+      "textures": 27
+    },
+    "V2-noon": {
+      "calls": 304,
+      "triangles": 545804,
+      "geometries": 289,
+      "textures": 37
+    },
+    "V3-noon": {
+      "calls": 232,
+      "triangles": 506210,
+      "geometries": 316,
+      "textures": 37
+    },
+    "V4-noon": {
+      "calls": 200,
+      "triangles": 548716,
+      "geometries": 325,
+      "textures": 37
+    },
+    "V5-noon": {
+      "calls": 208,
+      "triangles": 679334,
+      "geometries": 334,
+      "textures": 37
+    },
+    "V6-noon": {
+      "calls": 292,
+      "triangles": 782376,
+      "geometries": 363,
+      "textures": 38
+    },
+    "V7-noon": {
+      "calls": 221,
+      "triangles": 501424,
+      "geometries": 367,
+      "textures": 38
+    },
+    "V8-noon": {
+      "calls": 280,
+      "triangles": 540209,
+      "geometries": 367,
+      "textures": 38
+    }
+  },
+  "errors": [
+    "error: Failed to load resource: net::ERR_FAILED"
+  ]
+}

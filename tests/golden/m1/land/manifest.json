@@ -1,0 +1,257 @@
+{
+  "url": "http://localhost:4009/?tier=3&seed=777",
+  "viewport": "land",
+  "bendApex": 742,
+  "loadMsHeadless": 5982,
+  "shots": {
+    "V1-noon": {
+      "calls": 448,
+      "triangles": 530146,
+      "geometries": 197,
+      "textures": 29
+    },
+    "V1-golden": {
+      "calls": 462,
+      "triangles": 539872,
+      "geometries": 198,
+      "textures": 29
+    },
+    "V1-monsoon": {
+      "calls": 465,
+      "triangles": 532196,
+      "geometries": 199,
+      "textures": 29
+    },
+    "V1-rain": {
+      "calls": 467,
+      "triangles": 539470,
+      "geometries": 199,
+      "textures": 29
+    },
+    "V1-mist": {
+      "calls": 454,
+      "triangles": 525302,
+      "geometries": 199,
+      "textures": 29
+    },
+    "U1-noon": {
+      "calls": 566,
+      "triangles": 636786,
+      "geometries": 247,
+      "textures": 36
+    },
+    "V2-noon": {
+      "calls": 306,
+      "triangles": 548388,
+      "geometries": 294,
+      "textures": 37
+    },
+    "V3-noon": {
+      "calls": 236,
+      "triangles": 506392,
+      "geometries": 320,
+      "textures": 37
+    },
+    "V4-noon": {
+      "calls": 223,
+      "triangles": 582134,
+      "geometries": 331,
+      "textures": 37
+    },
+    "V5-noon": {
+      "calls": 220,
+      "triangles": 708164,
+      "geometries": 339,
+      "textures": 37
+    },
+    "V6-noon": {
+      "calls": 309,
+      "triangles": 785672,
+      "geometries": 367,
+      "textures": 38
+    },
+    "V7-noon": {
+      "calls": 224,
+      "triangles": 502462,
+      "geometries": 371,
+      "textures": 38
+    },
+    "V8-noon": {
+      "calls": 277,
+      "triangles": 540193,
+      "geometries": 371,
+      "textures": 38
+    },
+    "V2-golden": {
+      "calls": 348,
+      "triangles": 555040,
+      "geometries": 375,
+      "textures": 38
+    },
+    "V3-golden": {
+      "calls": 278,
+      "triangles": 508846,
+      "geometries": 375,
+      "textures": 38
+    },
+    "V4-golden": {
+      "calls": 233,
+      "triangles": 593222,
+      "geometries": 375,
+      "textures": 38
+    },
+    "V5-golden": {
+      "calls": 233,
+      "triangles": 721906,
+      "geometries": 375,
+      "textures": 38
+    },
+    "V6-golden": {
+      "calls": 352,
+      "triangles": 795910,
+      "geometries": 375,
+      "textures": 38
+    },
+    "V7-golden": {
+      "calls": 258,
+      "triangles": 502722,
+      "geometries": 375,
+      "textures": 38
+    },
+    "V8-golden": {
+      "calls": 321,
+      "triangles": 546849,
+      "geometries": 375,
+      "textures": 38
+    },
+    "V2-monsoon": {
+      "calls": 361,
+      "triangles": 550052,
+      "geometries": 375,
+      "textures": 38
+    },
+    "V3-monsoon": {
+      "calls": 281,
+      "triangles": 511730,
+      "geometries": 375,
+      "textures": 38
+    },
+    "V4-monsoon": {
+      "calls": 230,
+      "triangles": 592502,
+      "geometries": 375,
+      "textures": 38
+    },
+    "V5-monsoon": {
+      "calls": 235,
+      "triangles": 717266,
+      "geometries": 375,
+      "textures": 38
+    },
+    "V6-monsoon": {
+      "calls": 350,
+      "triangles": 785050,
+      "geometries": 375,
+      "textures": 38
+    },
+    "V7-monsoon": {
+      "calls": 256,
+      "triangles": 502534,
+      "geometries": 375,
+      "textures": 38
+    },
+    "V8-monsoon": {
+      "calls": 318,
+      "triangles": 541829,
+      "geometries": 375,
+      "textures": 38
+    },
+    "V2-rain": {
+      "calls": 361,
+      "triangles": 548592,
+      "geometries": 375,
+      "textures": 38
+    },
+    "V3-rain": {
+      "calls": 287,
+      "triangles": 513654,
+      "geometries": 375,
+      "textures": 38
+    },
+    "V4-rain": {
+      "calls": 231,
+      "triangles": 595816,
+      "geometries": 375,
+      "textures": 38
+    },
+    "V5-rain": {
+      "calls": 232,
+      "triangles": 717708,
+      "geometries": 375,
+      "textures": 38
+    },
+    "V6-rain": {
+      "calls": 356,
+      "triangles": 788222,
+      "geometries": 375,
+      "textures": 38
+    },
+    "V7-rain": {
+      "calls": 259,
+      "triangles": 504386,
+      "geometries": 375,
+      "textures": 38
+    },
+    "V8-rain": {
+      "calls": 310,
+      "triangles": 540353,
+      "geometries": 375,
+      "textures": 38
+    },
+    "V2-mist": {
+      "calls": 351,
+      "triangles": 538162,
+      "geometries": 376,
+      "textures": 38
+    },
+    "V3-mist": {
+      "calls": 269,
+      "triangles": 503312,
+      "geometries": 376,
+      "textures": 38
+    },
+    "V4-mist": {
+      "calls": 223,
+      "triangles": 582134,
+      "geometries": 376,
+      "textures": 38
+    },
+    "V5-mist": {
+      "calls": 217,
+      "triangles": 707462,
+      "geometries": 376,
+      "textures": 38
+    },
+    "V6-mist": {
+      "calls": 334,
+      "triangles": 780954,
+      "geometries": 376,
+      "textures": 38
+    },
+    "V7-mist": {
+      "calls": 248,
+      "triangles": 498260,
+      "geometries": 376,
+      "textures": 38
+    },
+    "V8-mist": {
+      "calls": 298,
+      "triangles": 529919,
+      "geometries": 376,
+      "textures": 38
+    }
+  },
+  "errors": [
+    "error: Failed to load resource: net::ERR_FAILED"
+  ]
+}

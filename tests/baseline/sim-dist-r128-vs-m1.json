@@ -1,0 +1,145 @@
+{
+  "runs": 30,
+  "base": {
+    "pack-perfect": {
+      "n": 30,
+      "finished": 30,
+      "mean": 50.21,
+      "median": 50.15,
+      "p90": 51.32,
+      "max": 51.45,
+      "wins": 30,
+      "falls": 0
+    },
+    "pack-sloppy": {
+      "n": 30,
+      "finished": 30,
+      "mean": 61.95,
+      "median": 62.51,
+      "p90": 66.44,
+      "max": 68.37,
+      "wins": 1,
+      "falls": 0
+    },
+    "trial-perfect": {
+      "n": 30,
+      "finished": 30,
+      "mean": 19.68,
+      "median": 19.67,
+      "p90": 20.23,
+      "max": 21.03,
+      "wins": 30,
+      "falls": 0
+    },
+    "trial-sloppy": {
+      "n": 30,
+      "finished": 30,
+      "mean": 24.19,
+      "median": 23.7,
+      "p90": 27.16,
+      "max": 28.81,
+      "wins": 30,
+      "falls": 0
+    }
+  },
+  "candidate": {
+    "pack-perfect": {
+      "n": 30,
+      "finished": 30,
+      "mean": 49.84,
+      "median": 49.78,
+      "p90": 50.83,
+      "max": 50.97,
+      "wins": 30,
+      "falls": 0
+    },
+    "pack-sloppy": {
+      "n": 30,
+      "finished": 30,
+      "mean": 61.67,
+      "median": 60.93,
+      "p90": 68.2,
+      "max": 69.45,
+      "wins": 0,
+      "falls": 0
+    },
+    "trial-perfect": {
+      "n": 30,
+      "finished": 30,
+      "mean": 19.52,
+      "median": 19.58,
+      "p90": 20.42,
+      "max": 21.15,
+      "wins": 30,
+      "falls": 0
+    },
+    "trial-sloppy": {
+      "n": 30,
+      "finished": 30,
+      "mean": 24.5,
+      "median": 24.41,
+      "p90": 26.64,
+      "max": 29.63,
+      "wins": 30,
+      "falls": 0
+    }
+  },
+  "rows": [
+    {
+      "case": "pack-perfect",
+      "baseMean": 50.21,
+      "newMean": 49.84,
+      "dMean": -0.37,
+      "baseP90": 51.32,
+      "newP90": 50.83,
+      "dP90": -0.49,
+      "baseWins": 30,
+      "newWins": 30,
+      "baseMax": 51.45,
+      "newMax": 50.97,
+      "ok": true
+    },
+    {
+      "case": "pack-sloppy",
+      "baseMean": 61.95,
+      "newMean": 61.67,
+      "dMean": -0.28,
+      "baseP90": 66.44,
+      "newP90": 68.2,
+      "dP90": 1.76,
+      "baseWins": 1,
+      "newWins": 0,
+      "baseMax": 68.37,
+      "newMax": 69.45,
+      "ok": false
+    },
+    {
+      "case": "trial-perfect",
+      "baseMean": 19.68,
+      "newMean": 19.52,
+      "dMean": -0.16,
+      "baseP90": 20.23,
+      "newP90": 20.42,
+      "dP90": 0.19,
+      "baseWins": 30,
+      "newWins": 30,
+      "baseMax": 21.03,
+      "newMax": 21.15,
+      "ok": true
+    },
+    {
+      "case": "trial-sloppy",
+      "baseMean": 24.19,
+      "newMean": 24.5,
+      "dMean": 0.31,
+      "baseP90": 27.16,
+      "newP90": 26.64,
+      "dP90": -0.52,
+      "baseWins": 30,
+      "newWins": 30,
+      "baseMax": 28.81,
+      "newMax": 29.63,
+      "ok": true
+    }
+  ]
+}
