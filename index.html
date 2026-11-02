@@ -95,6 +95,32 @@ h1{font-family:var(--display);font-weight:800;font-size:44px;line-height:.95;mar
 .hai small{font-family:var(--body);font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;opacity:.85}
 .hai.press,.hai:active{transform:translateY(4px);box-shadow:0 1px 0 #8e2210}
 button:focus-visible{outline:3px solid var(--marigold);outline-offset:2px}
+.judge{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);font-family:var(--display);font-weight:800;font-size:22px;pointer-events:none;opacity:0;text-shadow:0 2px 0 rgba(36,22,15,.9),0 0 12px rgba(36,22,15,.6);white-space:nowrap}
+.judge.pop{animation:jpop .7s ease-out forwards}
+.judge.perfect{color:#ffd23f}.judge.good{color:var(--cream)}.judge.off{color:#ff9a8a}
+@keyframes jpop{0%{opacity:0;transform:translate(-50%,8px) scale(.85)}15%{opacity:1;transform:translate(-50%,0) scale(1.08)}70%{opacity:1}100%{opacity:0;transform:translate(-50%,-10px) scale(1)}}
+.prompt{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:2px;pointer-events:none;padding:12px 20px;border-radius:16px;background:rgba(36,22,15,.55);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+.prompt b{font-family:var(--display);font-weight:800;font-size:34px;line-height:1;color:var(--cream);white-space:nowrap}
+.prompt span{font-size:13px;color:var(--cream-dim)}
+.prompt.brace b{color:#ffb23f;animation:throb .35s ease-in-out infinite alternate}
+.prompt.thrown b{color:#ff9a8a}.prompt.jump b{color:#a8f07a;animation:throb .3s ease-in-out infinite alternate}
+@keyframes throb{from{transform:scale(1)}to{transform:scale(1.12)}}
+.hai{position:relative}
+.beat{position:absolute;inset:-5px;border:3px solid var(--marigold);border-radius:20px;pointer-events:none;opacity:0;transform-origin:center}
+.beat.on{border-color:#fff4d0;box-shadow:0 0 14px rgba(255,210,63,.8)}
+.cam{position:absolute;top:10px;right:58px;z-index:6;width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:rgba(36,22,15,.6);color:var(--cream);display:grid;place-items:center;cursor:pointer;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.pair label{display:flex;flex-direction:column;gap:4px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--cream-dim)}
+.pair select{font:600 14px var(--body);color:var(--cream);background:var(--ink-2);border:1px solid var(--line);border-radius:10px;padding:8px;min-width:0;width:100%}
+.stats-box{display:grid;grid-template-columns:1fr 1fr;gap:4px 14px}
+.stat-row{display:grid;grid-template-columns:58px 1fr;gap:6px;align-items:center;font-size:11.5px;color:var(--cream-dim)}
+.stat-row i{height:5px;border-radius:3px;background:var(--ink-2);overflow:hidden}
+.stat-row b{display:block;height:100%;background:var(--paddy);border-radius:3px}
+.note{font-size:12.5px;line-height:1.4;color:var(--cream-dim);margin:0}
+.howto{font-size:13px;color:var(--cream-dim)}
+.howto summary{cursor:pointer;color:var(--cream);font-weight:600}
+.howto ul{margin:8px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:5px;line-height:1.4}
+.prize{font-family:var(--display);font-weight:700;font-size:16px;color:#ffd23f;margin:0}
 .snd{position:absolute;top:10px;right:10px;z-index:6;width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:rgba(36,22,15,.6);color:var(--cream);display:grid;place-items:center;cursor:pointer;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
 .snd:active{transform:scale(.94)}
 @media (prefers-reduced-motion:reduce){.toast{animation-duration:.01s;animation-delay:1.2s}.zone{transition:none}}
@@ -108,7 +134,7 @@ button:focus-visible{outline:3px solid var(--marigold);outline-offset:2px}
     <div class="pos"><b id="pos">—</b><span id="posOf">of 4</span></div>
     <div class="trk">
       <div class="bar" id="bar"><div class="flag"></div></div>
-      <div class="meta"><span><b id="dist">0</b> / 800 m</span><span><b id="time">0.0</b> s</span><span><b id="kmh">0</b> km/h</span></div>
+      <div class="meta"><span><b id="dist">0</b> / <span id="lenLbl">800</span> m</span><span><b id="time">0.0</b> s</span><span><b id="kmh">0</b> km/h</span></div>
     </div>
   </header>
 
@@ -117,20 +143,35 @@ button:focus-visible{outline:3px solid var(--marigold);outline-offset:2px}
     <div class="zone" id="zone"><b id="zoneTa"></b><span id="zoneEn"></span></div>
     <div class="toasts" id="toasts"></div>
     <div class="count" id="count" hidden></div>
-    <div class="hint" id="hint" hidden>Tap the track to shout · swipe to switch lanes</div>
+    <div class="hint" id="hint" hidden>Shout ஹை! on the bell · swipe or ◀ ▶ to steer · steer into a cart to bump</div>
+    <div class="judge" id="judge"></div>
+    <div class="prompt" id="prompt" hidden><b id="promptBig"></b><span id="promptSmall"></span></div>
 
     <div class="overlay" id="startOv">
       <div class="card">
         <div class="ta">ரேக்ளா ரேஸ்</div>
         <h1>Rekla Race</h1>
-        <p class="lede">Pongal in Kongu country. Four pairs of Kangayam bulls race 800 metres from the festival ground to the temple, through the village, the paddy and the foothills.</p>
-        <ul class="how">
-          <li><span class="key hot">ஹை!</span><span>Shout to drive the bulls on. Every shout tires them, so pace it.</span></li>
-          <li><span class="key">◀ ▶</span><span>Switch lanes. Dodge potholes, puddles and the village goat.</span></li>
-          <li><span class="key cane">Cane</span><span>Run over sugarcane to refill stamina.</span></li>
-        </ul>
+        <p class="lede">Pongal in Kongu country. Shout on the beat, keep your seat, and bring your bulls home first.</p>
+        <div class="lab">Race</div>
+        <div class="chips" id="modeChips" role="group" aria-label="Race type"></div>
+        <p class="note" id="modeNote"></p>
+        <div class="lab">Your bulls</div>
+        <div class="pair">
+          <label for="bullL">Left bull<select id="bullL"></select></label>
+          <label for="bullR">Right bull<select id="bullR"></select></label>
+        </div>
+        <div class="stats-box" id="stats"></div>
+        <p class="note" id="pairNote"></p>
         <div class="lab">Race atmosphere</div>
         <div class="chips" id="atmo" role="group" aria-label="Race atmosphere"></div>
+        <details class="howto"><summary>How to play</summary><ul>
+          <li><b>ஹை! on the bell.</b> A shout on the hoofbeat is a Perfect: more speed, less stamina. The ring on the button shows the beat.</li>
+          <li><b>Brace.</b> Potholes, the goat and rival bumps can throw you. When BRACE flashes, tap anything.</li>
+          <li><b>Thrown off?</b> Tap ◀ ▶ in turn to run after your cart, then ஹை! to jump back on. The cart must finish with you on it.</li>
+          <li><b>Bump.</b> In pack races, steer into a cart beside you to slam wheels. Pushing someone into the barricade is a foul.</li>
+          <li><b>Do or Die.</b> The last stretch: shouts hit harder but cost more.</li>
+          <li><b>Camera.</b> The camera button or C cycles five views.</li>
+        </ul></details>
         <button class="go" id="startBtn" disabled>Loading…</button>
         <p class="small" id="bestStart">Building the village…</p>
       </div>
@@ -141,14 +182,16 @@ button:focus-visible{outline:3px solid var(--marigold);outline-offset:2px}
         <div class="ta" id="endTa">வெற்றி!</div>
         <div class="rank" id="endRank">1st</div>
         <p class="lede" id="endLine">Your bulls crossed the rope first.</p>
+        <p class="prize" id="endPrize" hidden></p>
         <div class="stats">
           <div class="stat"><span>Time</span><b id="endTime">0.0 s</b></div>
           <div class="stat"><span>Best</span><b id="endBest">—</b></div>
         </div>
         <button class="go" id="againBtn">Race again</button>
-        <button class="ghost" id="menuBtn">Change atmosphere</button>
+        <button class="ghost" id="menuBtn">Change race, bulls or weather</button>
       </div>
     </div>
+    <button class="cam" id="camBtn" type="button" aria-label="Change camera"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8a2 2 0 0 1 2-2h2l2-2h6l2 2h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><circle cx="12" cy="12.5" r="3.5"/></svg></button>
     <button class="snd" id="snd" type="button" aria-label="Mute sound" aria-pressed="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor" stroke="none"/><path class="wave" d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/><path class="x" d="M17 9l5 6M22 9l-5 6" style="display:none"/></svg></button>
   </div>
 
@@ -156,7 +199,7 @@ button:focus-visible{outline:3px solid var(--marigold);outline-offset:2px}
     <button class="steer" id="bl" aria-label="Move left"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
     <div class="hai-wrap">
       <div class="stam-row"><span>Stamina</span><div class="stam"><i id="stam"></i></div></div>
-      <button class="hai" id="hai" aria-label="Shout to speed up">ஹை! <small>Hai</small></button>
+      <button class="hai" id="hai" aria-label="Shout to speed up"><span id="haiTa">ஹை!</span> <small id="haiEn">Hai</small><i class="beat" id="beat"></i></button>
     </div>
     <button class="steer" id="br" aria-label="Move right"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></button>
   </div>

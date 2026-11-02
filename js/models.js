@@ -20,6 +20,17 @@
   R.mk = mk;
 
   const G = {};   // shared geometries
+  // native breeds: stat multipliers are game design; looks follow TNAU breed notes
+  R.BREEDS = {
+    kangayam:   { en: 'Kangayam',   ta: 'காங்கேயம்',   tint: '#ffffff', scale: 1.0,  hornless: false, speed: 1.0,  stamina: 1.0,  accel: 1.0,  wet: 0.95, calm: 1.0,  power: 1.0,  note: 'The all-rounder' },
+    bargur:     { en: 'Bargur',     ta: 'பர்கூர்',      tint: '#b8835a', scale: 0.95, hornless: false, speed: 1.06, stamina: 1.08, accel: 1.02, wet: 0.9,  calm: 0.72, power: 0.85, note: 'Fast and tireless, nervous near crowds' },
+    umblachery: { en: 'Umblachery', ta: 'உம்பளச்சேரி', tint: '#c07a55', scale: 0.97, hornless: true,  speed: 0.96, stamina: 1.02, accel: 1.0,  wet: 1.18, calm: 1.05, power: 1.02, note: 'Sure-footed on wet ground' },
+    ongole:     { en: 'Ongole',     ta: 'ஓங்கோல்',      tint: '#fbfaf6', scale: 1.13, hornless: false, speed: 0.97, stamina: 1.05, accel: 0.84, wet: 0.95, calm: 1.12, power: 1.32, note: 'Huge and strong, slow to start' },
+  };
+  R.BREED_ORDER = ['kangayam', 'bargur', 'umblachery', 'ongole'];
+  // stats of a pair: averages, plus how unevenly the two pull
+  R.pairStats = (a, b) => { const A = R.BREEDS[a], B = R.BREEDS[b], avg = k => (A[k] + B[k]) / 2;
+    return { speed: avg('speed'), stamina: avg('stamina'), accel: avg('accel'), wet: avg('wet'), power: avg('power'), calm: Math.min(A.calm, B.calm), pull: B.speed - A.speed }; };
   R.Models.init = function () {
     Object.assign(M, {
       bull: std('#ffffff', 0.72, 0, { vertexColors: true }),
@@ -30,6 +41,7 @@
       goat: std('#2a2320', 0.85), goatW: std('#efe8dc', 0.85), horn: std('#3a2c22', 0.55),
       cane: std('#5a2350', 0.6), leaf: std('#5f9a2e', 0.8, 0, { side: T.DoubleSide }),
     });
+    M.breed = {}; for (const k in R.BREEDS) M.breed[k] = std(R.BREEDS[k].tint, 0.72, 0, { vertexColors: true });
     buildShared();
   };
 
@@ -62,7 +74,7 @@
     paint(neck, null, (x, y) => grey.clone().lerp(hide, 0.35).multiplyScalar(lerp(0.75, 1, smooth(1.15, 1.5, y))));
     return mergeGeos([g, neck]);
   }
-  function bullHead(hornHex) {
+  function bullHead(hornHex, hornless) {
     const parts = [];
     const hide = col('#ddd7cc'), muzzle = col('#3a332e'), horn = col(hornHex), white = col('#f2ede4'), brass = col('#d8ad44');
     const h = new T.SphereGeometry(1, 14, 10), p = h.attributes.position;
@@ -84,8 +96,7 @@
       }
       tube.computeVertexNormals();
       paint(tube, null, (x, y, z, i) => { const t = uv.getX(i); if (t < 0.14) return hide.clone().multiplyScalar(0.8); if (t > 0.88) return brass; return ((t * 9) | 0) % 2 ? horn : white; });
-      parts.push(tube);
-      const tassel = new T.ConeGeometry(0.05, 0.16, 6); tassel.rotateX(Math.PI); tassel.translate(s * 0.24, 0.62, 0.14); parts.push(paint(tassel, '#e23b2a'));
+      if (!hornless) { parts.push(tube); const tassel = new T.ConeGeometry(0.05, 0.16, 6); tassel.rotateX(Math.PI); tassel.translate(s * 0.24, 0.62, 0.14); parts.push(paint(tassel, '#e23b2a')); }
     }
     // forelock tuft between horns
     const tuft = new T.SphereGeometry(0.07, 8, 6); tuft.scale(1.4, 0.7, 1); tuft.translate(0, 0.13, -0.04); parts.push(paint(tuft, '#c9c2b6'));
@@ -125,21 +136,22 @@
     G.blur = new T.CircleGeometry(W - 0.07, 24); G.blur.rotateY(Math.PI / 2);
   }
 
-  function makeBull(headGeo) {
+  function makeBull(headGeo, mat) {
+    mat = mat || M.bull;
     const g = new T.Group(), torso = new T.Group(); g.add(torso);
-    mk(G.body, M.bull, null, null, null, torso);
+    mk(G.body, mat, null, null, null, torso);
     const head = new T.Group(); head.position.set(0, 1.5, -1.2); torso.add(head);
-    mk(headGeo, M.bull, null, null, null, head);
+    mk(headGeo, mat, null, null, null, head);
     const legs = [];
     for (const [x, y, z, front] of [[-0.17, 0.95, -0.56, 1], [0.17, 0.95, -0.56, 1], [-0.17, 0.97, 0.62, 0], [0.17, 0.97, 0.62, 0]]) {
       const up = new T.Group(); up.position.set(x, y, z); g.add(up);
-      mk(front ? G.fUp : G.hUp, M.bull, null, null, null, up);
+      mk(front ? G.fUp : G.hUp, mat, null, null, null, up);
       const lo = new T.Group(); lo.position.set(0, front ? -0.46 : -0.5, 0); up.add(lo);
-      mk(front ? G.fLo : G.hLo, M.bull, null, null, null, lo, false);
+      mk(front ? G.fLo : G.hLo, mat, null, null, null, lo, false);
       legs.push({ up, lo, front });
     }
     const tail = new T.Group(); tail.position.set(0, 1.3, 0.95); torso.add(tail);
-    mk(G.tail, M.bull, null, null, null, tail, false);
+    mk(G.tail, mat, null, null, null, tail, false);
     return { g, torso, head, legs, tail };
   }
   // gallop: diagonal pairs, knees fold on the swing
@@ -216,14 +228,21 @@
     const p = [];
     const a = new T.CylinderGeometry(0.045, 0.04, 0.5, 6); a.translate(0, -0.25, 0); p.push(paint(a, '#f4efe6'));
     const h = new T.SphereGeometry(0.045, 6, 5); h.translate(0, -0.5, 0); p.push(paint(h, '#7a4a2a'));
-    const w = new T.CylinderGeometry(0.007, 0.014, 1.4, 4); w.translate(0, 0.7, 0); w.rotateX(0.9); w.translate(0, -0.5, 0); p.push(paint(w, '#3a2a1c'));
     return mergeGeos(p);
   }
 
-  R.Models.cart = function (d, scene) {
+  R.Models.cart = function (d, scene, breeds) {
+    breeds = breeds || d.breeds || ['kangayam', 'kangayam'];
     const grp = new T.Group(); grp.rotation.order = 'YXZ'; grp.userData.tag = 'cart';
-    const head = bullHead(d.body);
-    const bulls = [-0.56, 0.56].map(x => { const b = makeBull(head); b.g.position.set(x, 0, -2.6); grp.add(b.g); return b; });
+    const heads = {};
+    const bulls = [-0.56, 0.56].map((x, i) => {
+      const br = R.BREEDS[breeds[i]] || R.BREEDS.kangayam;
+      const key = br.hornless ? 'h' : 'n';
+      heads[key] = heads[key] || bullHead(d.body, br.hornless);
+      const b = makeBull(heads[key], M.breed[breeds[i]] || M.bull);
+      b.g.position.set(x, 0, -2.6); b.g.scale.setScalar(br.scale); b.g.position.y = 0;
+      grp.add(b.g); return b;
+    });
     const st = cartStatic(d);
     mk(st.geo, M.cart, null, null, null, grp);
     mk(st.brass, M.brass, null, null, null, grp, false);
@@ -264,7 +283,30 @@
       }
       rg.attributes.position.needsUpdate = true;
     };
-    return { grp, bulls, wheels, rArm, upd, ropes };
+    return { grp, bulls, wheels, rArm, upd, ropes, drv, breeds, dispose: () => { scene.remove(grp); scene.remove(ropes); } };
+  };
+
+  // ---------- the saarathi on foot (thrown off, chasing his cart) ----------
+  R.Models.runner = function (scene, turbanHex) {
+    const g = new T.Group(); g.rotation.order = 'YXZ';
+    const body = new T.Group(); g.add(body);
+    const P = [];
+    P.push(paint(new T.CylinderGeometry(0.15, 0.17, 0.55, 8).translate(0, 1.18, 0), '#f4efe6'));
+    P.push(paint(new T.SphereGeometry(0.12, 10, 8).translate(0, 1.58, 0), '#7a4a2a'));
+    P.push(paint(new T.TorusGeometry(0.1, 0.05, 6, 12).rotateX(Math.PI / 2).translate(0, 1.66, 0), turbanHex));
+    P.push(paint(new T.SphereGeometry(0.2, 8, 6).scale(1, 0.6, 1).translate(0, 0.9, 0), '#efe9dc'));
+    mk(mergeGeos(P), M.cart, null, null, null, body);
+    const limb = (len, r, hex) => paint(new T.CylinderGeometry(r, r * 0.85, len, 6).translate(0, -len / 2, 0), hex);
+    const legG = limb(0.85, 0.07, '#efe9dc'), armG = limb(0.55, 0.045, '#7a4a2a');
+    const legs = [-0.09, 0.09].map(x => { const pv = new T.Group(); pv.position.set(x, 0.88, 0); body.add(pv); mk(legG, M.cart, null, null, null, pv); return pv; });
+    const arms = [-0.2, 0.2].map(x => { const pv = new T.Group(); pv.position.set(x, 1.4, 0); body.add(pv); mk(armG, M.cart, null, null, null, pv); return pv; });
+    g.visible = false; scene.add(g);
+    const anim = (ph, amp, lean) => {
+      legs[0].rotation.x = Math.sin(ph) * amp; legs[1].rotation.x = -Math.sin(ph) * amp;
+      arms[0].rotation.x = -Math.sin(ph) * amp * 0.9; arms[1].rotation.x = Math.sin(ph) * amp * 0.9;
+      body.rotation.x = -lean; body.position.y = Math.abs(Math.sin(ph)) * 0.06 * amp;
+    };
+    return { g, anim };
   };
 
   // ---------- obstacles ----------

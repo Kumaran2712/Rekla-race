@@ -22,11 +22,11 @@ This is a static site with no build step. It uses [three.js r128](https://threej
 | `js/sky.js` | Shader sky with clouds, sun and shadows, image-based lighting, the five atmospheres |
 | `js/world.js` | Terrain, road ribbon, Western Ghat ridgelines |
 | `js/scenery.js` | Paddy, canal, coconut, palmyra, banana, sugarcane, houses, tea shop, shrine, gopuram, power lines, vehicles |
-| `js/models.js` | Kangayam bulls, racing cart, driver, obstacles |
+| `js/models.js` | Bull breeds (Kangayam, Bargur, Umblachery, Ongole), racing cart, saarathi, runner, obstacles |
 | `js/crowd.js` | GPU-animated crowd, barricades, bunting, banners, pandal |
 | `js/weather.js` | Rain, ground mist, circling kites |
 | `js/post.js` | Sun shafts, speed blur, colour grade |
 | `js/audio.js` | Synthesised sound: hooves, bells, shouts, crowd, parai drums, weather |
-| `js/game.js` | Race simulation, controls, camera, HUD, adaptive resolution |
+| `js/game.js` | Race rules (rhythm shouting, brace, fall and catch, bumping), two race modes, five cameras, HUD |
 
 To run it locally, serve the folder with any static server, for example `python3 -m http.server`, then open `http://localhost:8000`.

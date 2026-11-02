@@ -49,6 +49,43 @@
   }
   const V = { a: [800, 1250, 2600], i: [300, 2250, 3000], e: [480, 1850, 2600], o: [500, 900, 2400], u: [330, 850, 2300], ai: [720, 1300, 2600] };
 
+  // ---------- original score ----------
+  // An original melody (written for this game) in raga Mohanam (S R2 G3 P D2), played by a synthesised
+  // nadaswaram-style reed over a sruti drone. 64 eighth-notes at 152 bpm, the same tempo as the parai,
+  // so the drums and the tune stay locked together.
+  const EIGHTH = 60 / 152 / 2;
+  const TUNE = [
+    [7, 1], [9, 1], [12, 2], [14, 1], [12, 1], [9, 2], [7, 2], [4, 1], [7, 1], [9, 4],
+    [12, 1], [14, 1], [16, 2], [14, 1], [12, 1], [9, 2], [7, 1], [9, 1], [7, 1], [4, 1], [2, 4],
+    [4, 1], [7, 1], [9, 2], [12, 2], [9, 1], [7, 1], [4, 2], [2, 1], [4, 1], [0, 4],
+    [2, 1], [4, 1], [7, 2], [9, 1], [7, 1], [4, 2], [2, 2], [0, 1], [2, 1], [0, 4],
+  ];
+  function makeScore() {
+    const tonic = 293.66, n = Math.round(64 * EIGHTH * SR), d = new Float32Array(n);
+    const f1 = biquad('bp', 1150, 2.2), f2 = biquad('bp', 2600, 3.5), lp = biquad('lp', 4200, 0.7), dl = biquad('lp', 520, 0.7), br = biquad('bp', 1800, 1.2);
+    let ph = 0, dp1 = 0, dp2 = 0, f = tonic * Math.pow(2, 7 / 12), idx = 0, noteStart = 0;
+    const starts = []; let acc = 0; for (const [deg, len] of TUNE) { starts.push([acc, deg, len]); acc += len; }
+    for (let i = 0; i < n; i++) {
+      const t = i / SR, e8 = t / EIGHTH;
+      while (idx < starts.length - 1 && e8 >= starts[idx + 1][0]) { idx++; noteStart = t; }
+      const [, deg, len] = starts[idx], tn = t - noteStart, dur = len * EIGHTH;
+      let target = tonic * Math.pow(2, deg / 12);
+      if (len >= 2 && tn > dur * 0.45) target *= Math.pow(2, Math.sin((tn - dur * 0.45) * TAU * 6.5) * 0.55 / 12);   // kampita oscillation
+      target *= 1 + Math.sin(t * TAU * 5.3) * 0.004;
+      f += (target - f) * Math.min(1, 1 / (0.03 * SR));                                                          // gamaka glide
+      ph += f / SR; ph -= Math.floor(ph);
+      const reed = (ph * 2 - 1) * 0.6 + (ph < 0.32 ? 0.4 : -0.4);
+      const env = (0.72 + 0.28 * Math.min(1, tn / 0.03)) * Math.min(1, (dur - tn) / 0.02 + 0.6);
+      const breath = br.run(Math.random() * 2 - 1) * 0.05;
+      const lead = lp.run(f1.run(reed) * 1.0 + f2.run(reed) * 0.55 + reed * 0.12 + breath) * env;
+      dp1 += 146.83 / SR; dp2 += 220.0 / SR;
+      const drone = dl.run(((dp1 % 1) * 2 - 1) * 0.5 + ((dp2 % 1) * 2 - 1) * 0.35) * (0.85 + 0.15 * Math.sin(t * TAU * 0.25));
+      d[i] = lead * 0.9 + drone * 0.5;
+    }
+    const fade = Math.floor(0.01 * SR); for (let i = 0; i < fade; i++) { d[i] *= i / fade; d[n - 1 - i] *= i / fade; }
+    return norm(d, 0.8);
+  }
+
   // ---------- the sound bank ----------
   const S = {};
   A.prepare = function () {
@@ -92,6 +129,8 @@
     S.templeBell = gen(3.2, (d, n) => { const P = [[523, 1], [1251, 0.6], [1722, 0.45], [2330, 0.3], [2977, 0.2]]; for (let i = 0; i < n; i++) { const t = i / SR; let s = 0; P.forEach(([f, a], k) => { s += Math.sin(t * TAU * f) * a * Math.exp(-t * (0.9 + k * 0.6)); }); d[i] = s * Math.min(1, t * 400) * (1 + 0.1 * Math.sin(t * TAU * 3.5)); } });
     S.snort = gen(0.55, (d, n) => { const lp = biquad('lp', 650, 1.2); for (let i = 0; i < n; i++) { const t = i / SR; d[i] = lp.run(Math.random() * 2 - 1) * Math.min(1, t * 40) * Math.exp(-t * 6) * (0.7 + 0.3 * Math.sin(t * TAU * 22)); } });
     S.thunder = gen(5, (d, n) => { const lp = biquad('lp', 140, 0.7), lp2 = biquad('lp', 90, 0.7); let b = 0; for (let i = 0; i < n; i++) { const t = i / SR; b = (b + 0.04 * (Math.random() * 2 - 1)) / 1.04; d[i] = lp2.run(lp.run(b)) * Math.min(1, t * 6) * Math.exp(-t * 0.8) * (1 + 0.6 * Math.sin(t * 7) * Math.sin(t * 2.3)); } });
+    S.whistle = gen(0.7, (d, n) => { let ph = 0; for (let i = 0; i < n; i++) { const t = i / SR; ph += (2900 + 120 * Math.sin(t * TAU * 28)) / SR; d[i] = Math.sin(ph * TAU) * Math.min(1, t * 80) * Math.min(1, (0.7 - t) * 12) * (0.75 + 0.25 * Math.sign(Math.sin(t * TAU * 28))); } });
+    S.score = makeScore();
     S.knock = gen(0.15, (d, n) => { const bp = biquad('bp', 700, 3); for (let i = 0; i < n; i++) { const t = i / SR; d[i] = bp.run(Math.random() * 2 - 1) * Math.exp(-t * 60); } });
     // loops
     S.rumble = loop(2.5, (d, n) => { const lp = biquad('lp', 230, 0.8); let b = 0; for (let i = 0; i < n; i++) { b = (b + 0.03 * (Math.random() * 2 - 1)) / 1.03; d[i] = lp.run(b) + (Math.random() < 0.0015 ? (Math.random() - 0.5) * 0.4 : 0); } });
@@ -194,8 +233,19 @@
     if (!A.ready) return;
     const sp = c && c.m ? spatial(c.m.grp.position) : { vol: 1, pan: 0 };
     switch (type) {
-      case 'hai': play('hai', { vol: 0.95, rate: rnd(0.96, 1.04) }); play('crack', { vol: 0.55, when: ctx.currentTime + 0.12, rate: rnd(0.9, 1.1) }); break;
-      case 'rivalHai': if (sp.vol > 0.08) { play('rivalHai', { vol: 0.55 * sp.vol, pan: sp.pan, rate: rnd(0.85, 1.2) }); play('crack', { vol: 0.35 * sp.vol, pan: sp.pan, when: ctx.currentTime + 0.1 }); } break;
+      case 'hai': play('hai', { vol: 0.95, rate: rnd(0.96, 1.04) }); break;
+      case 'perfect': play('bell', { vol: 0.24, rate: 1.25 }); break;
+      case 'off': play('knock', { vol: 0.18, rate: 0.8 }); break;
+      case 'brace': play('beep', { vol: 0.35, rate: 1.35 }); break;
+      case 'braced': play('knock', { vol: 0.4 }); play('snort', { vol: 0.3 }); break;
+      case 'thrown': play('pothole', { vol: 0.95 }); play('snort', { vol: 0.5 }); swell = Math.max(swell, 0.9); break;
+      case 'catch': play('chime', { vol: 0.5 }); swell = 1.7; break;
+      case 'stumble': play('knock', { vol: 0.35, rate: 0.7 }); break;
+      case 'bump': play('pothole', { vol: 0.7 * sp.vol + 0.2, rate: 1.3, pan: sp.pan }); play('knock', { vol: 0.6 * sp.vol + 0.2, pan: sp.pan }); break;
+      case 'rivalThrown': if (sp.vol > 0.06) { play('pothole', { vol: 0.6 * sp.vol, pan: sp.pan }); swell = Math.max(swell, 0.7); } break;
+      case 'foul': play('whistle', { vol: 0.5 }); break;
+      case 'doordie': for (let k = 0; k < 12; k++) play(k % 3 ? 'drumHi' : 'drumLo', { vol: 0.45, amb: true, when: ctx.currentTime + k * 0.06 }); swell = Math.max(swell, 1); break;
+      case 'rivalHai': if (sp.vol > 0.08) play('rivalHai', { vol: 0.55 * sp.vol, pan: sp.pan, rate: rnd(0.85, 1.2) }); break;
       case 'pothole': play('pothole', { vol: 0.9 * sp.vol + 0.1, pan: sp.pan }); break;
       case 'puddle': play('splash', { vol: 0.8 * sp.vol + 0.1, pan: sp.pan, rate: rnd(0.9, 1.1) }); break;
       case 'goat': play('goat', { vol: 0.7, rate: rnd(0.95, 1.1) }); play('pothole', { vol: 0.4 }); break;
@@ -213,7 +263,7 @@
   };
 
   // ---------- continuous: hooves, bells, rumble, crowd, drums, weather, wildlife ----------
-  let swell = 0, nextDrum = 0, drumStep = 0, nextBird = 2, nextCrow = 4, nextThunder = 15, nextTemple = 6, tAcc = 0;
+  let musicG = null, swell = 0, nextDrum = 0, drumStep = 0, nextBird = 2, nextCrow = 4, nextThunder = 15, nextTemple = 6, tAcc = 0;
   const prevStride = new Map();
   const PAT = [2, 0, 1, 1, 2, 0, 1, 0, 2, 1, 1, 0, 2, 0, 1, 1];   // parai: 2 = low stroke, 1 = slap
   A.update = function (dt, o) {
@@ -231,10 +281,10 @@
       const offs = c.player ? [0, 0.13, 0.29, 0.5, 0.62, 0.79] : [0, 0.15, 0.32];
       const wet = R.U.wet.value;
       for (const off of offs) if (Math.floor(cur - off) > Math.floor(prev - off)) {
-        play('thud', { vol: (c.player ? 0.42 : 0.5 * near) * (0.8 + Math.random() * 0.4), pan: c.player ? (off < 0.45 ? -0.15 : 0.15) : sp.pan, rate: rnd(0.88, 1.08) * (1 - wet * 0.12) });
+        play('thud', { vol: (c.player ? (off === 0 ? 0.6 : 0.36) : 0.5 * near) * (0.8 + Math.random() * 0.4), pan: c.player ? (off < 0.45 ? -0.15 : 0.15) : sp.pan, rate: rnd(0.88, 1.08) * (1 - wet * 0.12) });
         if (wet > 0.55 && Math.random() < 0.25) play('splash', { vol: 0.06 * near, rate: rnd(1.4, 1.8), pan: sp.pan });
       }
-      if (Math.floor(cur) > Math.floor(prev) && near > 0.15) play('bell', { vol: 0.09 * near, pan: sp.pan, rate: rnd(0.95, 1.05) });
+      if (Math.floor(cur) > Math.floor(prev) && near > 0.15) play('bell', { vol: c.player ? 0.15 : 0.09 * near, pan: sp.pan, rate: c.player ? 1 : rnd(0.95, 1.05) });
       prevStride.set(c, cur);
     }
     // wheel rumble on the player's cart
@@ -256,6 +306,13 @@
       drumStep++; nextDrum += 60 / 152 / 2;
       if (nextDrum < now) nextDrum = now + 0.05;
     }
+    // the score: start on a drum-pattern boundary so tune and parai stay in step
+    if (!musicG && B.score) {
+      musicG = ctx.createGain(); musicG.gain.value = 0; musicG.connect(amb);
+      const stepDur = 60 / 152 / 2, k = (16 - (drumStep % 16)) % 16;
+      const src = ctx.createBufferSource(); src.buffer = B.score; src.loop = true; src.connect(musicG); src.start(nextDrum + k * stepDur);
+    }
+    if (musicG) { const menu = o.state === 'ready' || o.state === 'end'; musicG.gain.setTargetAtTime(menu ? 0.3 : 0.1 + fest * 0.16, now, 0.8); }
     // weather
     loops.rain.gain.setTargetAtTime((preset.rain || 0) * 0.32, now, 0.6);
     loops.wind.gain.setTargetAtTime(0.03 + (preset.wind || 0.5) * 0.05 + (preset.rain || 0) * 0.08, now, 0.8);
