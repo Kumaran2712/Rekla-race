@@ -27,6 +27,13 @@ S.attach = function (renderer) {
   S.renderer = renderer;
   S.loadMs = Math.round(performance.now());
 };
+// After a lost and restored graphics context the old extension and queries are invalid.
+S.contextRestored = function () {
+  if (!S.renderer) return;
+  gl = S.renderer.getContext(); ext = gl.getExtension('EXT_disjoint_timer_query_webgl2');
+  query = null; pending = []; S.gpuMs = null;
+};
+S.contextLost = function () { query = null; pending = []; };
 S.gpuBegin = function () {
   if (!ext || query) return;
   query = gl.createQuery(); gl.beginQuery(ext.TIME_ELAPSED_EXT, query);

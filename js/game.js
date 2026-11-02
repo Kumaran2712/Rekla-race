@@ -798,6 +798,7 @@
   const clock = new R.SimClock.FixedStepClock(), STEP = R.SimClock.STEP_S;
   let last = null, frames = 0, acc = 0;
   let paused = false, resumeT = 0, glLost = false;
+  let loseExt = null;
   R.stats = { fps: 0 };
   function savePrev() {
     for (const c of carts) { c._pd = c.dist; c._pl = c.lx; c._ps = c.step; }
@@ -964,19 +965,27 @@
   C.addEventListener('webglcontextlost', e => {
     e.preventDefault();               // tells the browser we will restore
     glLost = true;
+    R.Stats.contextLost();
     if (state === 'race' || state === 'count') pause('gl');
   });
   C.addEventListener('webglcontextrestored', () => {
     // three re-creates its GPU state itself; the environment map is baked content and must be re-baked
     glLost = false;
-    try { R.Sky.apply(R.Sky.id); renderer.render(scene, camera); }
+    try {
+      // GPU objects from the lost context cannot be deleted in the new one: drop them, don't dispose them
+      R.Sky.envRT = null; R.Sky.pmrem = new T.PMREMGenerator(renderer);
+      R.Stats.contextRestored();
+      R.Sky.apply(R.Sky.id); renderer.render(scene, camera);
+    }
     catch (err) {
       console.error('Graphics could not be restored, reloading to the menu', err);
       location.reload();
       return;
     }
     clock.resync(performance.now());
+    R.Stats.scenario = R.Stats.scenario.startsWith('losecontext') ? 'losecontext: restored OK' : R.Stats.scenario;
     if (paused) { $('pauseTitle').textContent = 'Paused'; $('pauseLine').textContent = 'Graphics restored. Continue when ready.'; $('resumeBtn').hidden = false; }
+    if (paused && AUTO.play) resume();   // unattended device runs carry on by themselves
   });
 
   const tick = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
@@ -1029,8 +1038,9 @@
     get clock() { return { simWall: clock.simWall, alpha: clock.alpha, capHits: clock.capHits, droppedMs: clock.droppedMs }; },
     get raceSeed() { return raceSeed; }, get paused() { return paused; }, get resumeT() { return resumeT; },
     pause: () => pause('hidden'), resume,
-    loseContext: () => { const x = renderer.getContext().getExtension('WEBGL_lose_context'); x && x.loseContext(); return !!x; },
-    restoreContext: () => { const x = renderer.getContext().getExtension('WEBGL_lose_context'); x && x.restoreContext(); return !!x; },
+    // the extension object must be fetched before the loss: a lost context returns null for getExtension
+    loseContext: () => { loseExt = loseExt || renderer.getContext().getExtension('WEBGL_lose_context'); if (loseExt) loseExt.loseContext(); return !!loseExt; },
+    restoreContext: () => { if (loseExt) loseExt.restoreContext(); return !!loseExt; },
     throwMe: () => throwOff(P), brace: () => startBrace(P, 'test'), hai, steer,
     // fast headless play-testing: advance the simulation without rendering; bot = 'perfect' | 'sloppy' | null
     sim: (secs, bot, fps = 60) => { const dt = 1 / fps; let n = Math.round(secs * fps), log = { perfect: 0, good: 0, off: 0, thrown: 0, braces: 0, caught: 0, bumps: 0 };
