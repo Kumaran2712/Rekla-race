@@ -234,19 +234,23 @@
   R.Models.cart = function (d, scene, breeds) {
     breeds = breeds || d.breeds || ['kangayam', 'kangayam'];
     const grp = new T.Group(); grp.rotation.order = 'YXZ'; grp.userData.tag = 'cart';
-    const heads = {};
+    // Resources this cart owns are disposed with it; bull heads are shared through the AssetCache
+    // (keyed by horn paint and horn type) and released when the last cart using them goes.
+    const heads = {}, owned = [], assetKeys = [];
     const bulls = [-0.56, 0.56].map((x, i) => {
       const br = R.BREEDS[breeds[i]] || R.BREEDS.kangayam;
       const key = br.hornless ? 'h' : 'n';
-      heads[key] = heads[key] || bullHead(d.body, br.hornless);
+      if (!heads[key]) { const ak = `bullHead:${key}:${d.body}`; heads[key] = R.Assets.acquire(ak, () => bullHead(d.body, br.hornless)); assetKeys.push(ak); }
       const b = makeBull(heads[key], M.breed[breeds[i]] || M.bull);
       b.g.position.set(x, 0, -2.6); b.g.scale.setScalar(br.scale); b.g.position.y = 0;
       grp.add(b.g); return b;
     });
     const st = cartStatic(d);
+    owned.push(st.geo, st.brass);
     mk(st.geo, M.cart, null, null, null, grp);
     mk(st.brass, M.brass, null, null, null, grp, false);
     const blurMat = new T.MeshBasicMaterial({ map: G.blurTex, transparent: true, opacity: 0, depthWrite: false, side: T.DoubleSide });
+    owned.push(blurMat);
     const wheels = [-1, 1].map(s => {
       const w = new T.Group(); w.position.set(s * 0.95, R.WHEEL_R, 0.05); grp.add(w);
       mk(G.wheel, M.cart, null, null, null, w);
@@ -255,14 +259,16 @@
       return w;
     });
     const drv = new T.Group(); drv.position.set(0, 1.12, -0.38); grp.add(drv);
-    mk(driverGeo(d), M.cart, null, null, null, drv);
+    const dGeo = driverGeo(d); owned.push(dGeo);
+    mk(dGeo, M.cart, null, null, null, drv);
     const rArm = new T.Group(); rArm.position.set(0.2, 0.62, 0.0); drv.add(rArm);
-    mk(whipArmGeo(), M.cart, null, null, null, rArm, false);
+    const aGeo = whipArmGeo(); owned.push(aGeo);
+    mk(aGeo, M.cart, null, null, null, rArm, false);
     // soft contact shadow under the team
-    const sh = new T.Mesh(new T.PlaneGeometry(2.6, 6.2), M.shadow); sh.rotation.x = -Math.PI / 2; sh.position.set(0, 0.04, -1.5); grp.add(sh);
+    const sh = new T.Mesh(new T.PlaneGeometry(2.6, 6.2), M.shadow); owned.push(sh.geometry); sh.rotation.x = -Math.PI / 2; sh.position.set(0, 0.04, -1.5); grp.add(sh);
     // nose ropes from each bull's muzzle to the driver's hand
     const rg = new T.BufferGeometry(); rg.setAttribute('position', new T.BufferAttribute(new Float32Array(2 * 9 * 2 * 3), 3));
-    const ropes = new T.LineSegments(rg, M.rope); ropes.frustumCulled = false; scene.add(ropes);
+    const ropes = new T.LineSegments(rg, M.rope); ropes.frustumCulled = false; scene.add(ropes); owned.push(rg);
     scene.add(grp);
     const hand = V3(-0.19, 0.46, -0.56), muzzle = V3(0, -0.2, -0.48);
     const A = V3(), B = V3(), Q = V3();
@@ -283,7 +289,12 @@
       }
       rg.attributes.position.needsUpdate = true;
     };
-    return { grp, bulls, wheels, rArm, upd, ropes, drv, breeds, dispose: () => { scene.remove(grp); scene.remove(ropes); } };
+    const dispose = () => {
+      scene.remove(grp); scene.remove(ropes);
+      owned.forEach(o => o.dispose()); owned.length = 0;
+      assetKeys.forEach(k => R.Assets.release(k)); assetKeys.length = 0;
+    };
+    return { grp, bulls, wheels, rArm, upd, ropes, drv, breeds, dispose };
   };
 
   // ---------- the saarathi on foot (thrown off, chasing his cart) ----------
@@ -324,7 +335,7 @@
     const legs = [];
     for (const [x, z] of [[-0.1, -0.22], [0.1, -0.22], [-0.1, 0.24], [0.1, 0.24]]) { const pv = new T.Group(); pv.position.set(x, 0.44, z); g.add(pv); mk(G.goatLeg, M.cart, null, null, null, pv, false); legs.push(pv); }
     g.rotation.order = 'YXZ'; g.userData.tag = 'goat'; scene.add(g);
-    return { g, legs };
+    return { g, legs, dispose: () => {} };   // goat geometry is shared for the whole session
   };
   R.Models.cane = function (scene) {
     const g = new T.Group();
@@ -338,9 +349,10 @@
       G.caneBundle = mergeGeos(parts);
     }
     mk(G.caneBundle, M.cart, null, null, null, g);
-    const ring = mk(new T.TorusGeometry(0.85, 0.035, 6, 32), new T.MeshBasicMaterial({ color: col('#ffb21a') }), [0, 0.05, 0], null, [Math.PI / 2, 0, 0], g, false);
+    const rr = R.Assets.acquire('caneRing', () => ({ geo: new T.TorusGeometry(0.85, 0.035, 6, 32), mat: new T.MeshBasicMaterial({ color: col('#ffb21a') }) }));
+    const ring = mk(rr.geo, rr.mat, [0, 0.05, 0], null, [Math.PI / 2, 0, 0], g, false);
     g.rotation.order = 'YXZ'; g.userData.tag = 'cane'; scene.add(g);
-    return { g, ring };
+    return { g, ring, dispose: () => R.Assets.release('caneRing') };
   };
   let holeMats = null;
   R.Models.hole = function (type, scene) {
@@ -350,13 +362,14 @@
       pud: std('#5d6c68', 0.04, 0.2, { polygonOffset: true, polygonOffsetFactor: -3 }),
       pudRim: std('#6e4526', 0.9, 0, { polygonOffset: true, polygonOffsetFactor: -2 }),
     };
-    const g = new T.Group(), wet = type === 'puddle';
-    const rim = new T.Mesh(new T.CircleGeometry(wet ? 1.05 : 0.95, 24), wet ? holeMats.pudRim : holeMats.potRim);
-    const core = new T.Mesh(new T.CircleGeometry(wet ? 0.9 : 0.7, 24), wet ? holeMats.pud : holeMats.pot);
+    const g = new T.Group(), wet = type === 'puddle', key = 'holeGeo:' + type;
+    const hg = R.Assets.acquire(key, () => [new T.CircleGeometry(wet ? 1.05 : 0.95, 24), new T.CircleGeometry(wet ? 0.9 : 0.7, 24)]);
+    const rim = new T.Mesh(hg[0], wet ? holeMats.pudRim : holeMats.potRim);
+    const core = new T.Mesh(hg[1], wet ? holeMats.pud : holeMats.pot);
     for (const m of [rim, core]) { m.rotation.x = -Math.PI / 2; m.receiveShadow = true; g.add(m); }
     rim.position.y = 0.012; core.position.y = 0.018;
     g.scale.set(1, 1, wet ? 0.7 : 0.62);
     g.rotation.order = 'YXZ'; g.userData.tag = 'hole'; scene.add(g);
-    return { g };
+    return { g, dispose: () => R.Assets.release(key) };
   };
 })();

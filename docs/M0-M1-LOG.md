@@ -18,6 +18,13 @@ Plan and acceptance gates: Technical Audit Revision 2 and the approval brief of 
 | 2026-11-02 | r187 post pass: the scene renders to a half-float target in linear HDR (r153+ no longer tone-maps render targets). The pass tone-maps and sRGB-encodes each sample itself, then grades as before. | Keeps the grade, speed blur and sun-shaft thresholds working on the same display values as r128. |
 | 2026-11-02 | `PCFSoftShadowMap` was removed in r180+ (three now falls back to `PCFShadowMap` with a warning). We set `PCFShadowMap` explicitly; softness comes from `shadow.radius = 2`, which r128 ignored. | No console warnings; shadow edges will differ slightly. |
 | 2026-11-02 | Light intensities × π (sun and hemisphere). | r128's legacy light mode multiplied punctual and hemisphere irradiance by π internally; r155+ removed legacy mode. |
+| 2026-11-02 | Race shots are captured after re-seeding `Math.random` at race start (`__reseed(777)`). | three.js consumes random numbers while loading (object IDs), and r187 consumes a different number than r128. Without re-seeding, race content (obstacles, rival moves) differed between builds and hid real rendering differences. |
+| 2026-11-02 | From Phase 4 on, gameplay randomness uses its own seeded stream per race (`?seed=N`). | Required for reproducible tests. It means race content after Phase 4 can never match r128 shot for shot, so race-shot goldens are re-baselined from the reviewed Phase 3/4 builds; menu shots (V1, U1) stay comparable to r128. |
+| 2026-11-02 | Canvas taps are judged at **pointerdown** time; before they were judged when the finger lifted (pointerup). | The shout belongs to the moment of touch. Buttons already used pointerdown. |
+| 2026-11-02 | Interpolation draws the state between the last two simulation steps, so what is shown lags by at most one step (16.7 ms). | Standard fixed-step practice; it removes judder when display and simulation rates differ. |
+| 2026-11-02 | The tier thresholds in `src/quality.js` (benchmark 26/18/12/8/5 ms; p95 22/18 ms) are first estimates. | They can only be calibrated on the real devices (protocol scenario 1 and 5). |
+| 2026-11-02 | Chrome logs "GPU stall due to ReadPixels" once during the first-visit benchmark. | The 1-pixel readback is how the benchmark waits for the GPU; it is a driver performance note, not an error, and does not repeat once a tier is remembered. |
+| 2026-11-02 | Leaks fixed: carts freed their geometry only from the scene, not the GPU (`models.js` `dispose`), and every race re-created pothole, puddle and cane-ring geometry without freeing the old ones. | Found by inspection; confirmed by the 20-cycle test. |
 
 ## Baseline (r128, headless SwiftShader — relative numbers only, not device performance)
 

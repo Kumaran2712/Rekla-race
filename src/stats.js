@@ -133,6 +133,8 @@ S.report = function () {
       history5s: all,
     },
     estimate: { textureMemory: scene ? S.textureEstimate(scene) : null },
+    leakTest: S.leak || null,
+    simulationClock: R.debug ? R.debug.clock : null,
     quality: R.Quality ? { tier: R.Quality.tier, name: R.Quality.TIERS[R.Quality.tier].name, source: R.Quality.source, benchmarkMs: R.Quality.benchmarkMs, changes: R.Quality.log } : null,
   };
 };

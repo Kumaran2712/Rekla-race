@@ -90,7 +90,7 @@
   const bar = $('bar');
   let dots = [];
 
-  function clearObs() { for (const o of obs) scene.remove(o.m.g); obs = []; }
+  function clearObs() { for (const o of obs) { scene.remove(o.m.g); o.m.dispose(); } obs = []; }
   function genObs() {
     clearObs();
     const types = mode.rivals ? ['pothole', 'puddle', 'pothole', 'puddle', 'goat', 'cane'] : ['pothole', 'puddle', 'pothole', 'goat'];
@@ -837,7 +837,7 @@
       const cnt = $('count'), n = Math.ceil(resumeT);
       cnt.hidden = resumeT <= 0; cnt.textContent = n > 0 ? String(n) : '';
     } else {
-      clock.advance(now, stepWall => { savePrev(); drainInputs(stepWall); dt += update(STEP); });
+      clock.advance(now, stepWall => { savePrev(); if (AUTO.play) autoStep(); drainInputs(stepWall); dt += update(STEP); });
     }
     R.U.time.value += dt;
     interpolate(clock.alpha);
@@ -858,6 +858,74 @@
     hud();
     frames++; acc += rdt;
     if (acc > 1.5) { R.stats.fps = frames / acc; frames = 0; acc = 0; }
+    if (AUTO.play) autoMenu(rdt);
+  }
+
+  // ---------- device-test helpers (docs/DEVICE_TEST_PROTOCOL.md) ----------
+  // &autoplay=1: the built-in perfect bot races pack races back to back (scenario 2 and the soak).
+  // &leaktest=1: 20 race / menu / breed-change cycles with GPU counts in the stats report.
+  // &losecontext=1: drops and restores the graphics context 5 s into the first race.
+  const qs = new URLSearchParams(location.search);
+  const AUTO = { play: qs.has('autoplay'), leak: qs.has('leaktest'), lose: qs.has('losecontext'), races: 0, wait: 0, n: 0 };
+  function autoStep() {
+    if (state !== 'race' || P.fin !== null) return;
+    AUTO.n++;
+    if (P.brace) braced();
+    else if (P.fallen) {
+      if (runner.st && runner.st.down <= 0) {
+        if (Math.abs((P.dist - 0.9) - runner.st.dist) < 2.3) tryCatch();
+        else if (AUTO.n % 7 === 0) runStep(runner.st.side === 1 ? -1 : 1);
+      }
+    } else {
+      const f = strideFrac(P);
+      if ((f < 0.02 || f > 0.985) && t - P.lastShout > 0.22 && (P.stam > 18 || P.dod)) hai();
+    }
+  }
+  function autoMenu(rdt) {
+    if (state !== 'ready' && state !== 'end') { AUTO.wait = 0; return; }
+    AUTO.wait += rdt;
+    if (AUTO.wait > (state === 'end' ? 2.5 : 1.5)) {
+      AUTO.wait = 0; AUTO.races++;
+      R.Stats.scenario = `autoplay: race ${AUTO.races}`;
+      setup.mode = 'pack'; startRace();
+    }
+  }
+  function runLeakTest() {
+    const breeds = R.BREED_ORDER, rows = [];
+    R.Stats.scenario = 'leaktest: running';
+    let i = 0;
+    const cycle = () => {
+      setup.breeds = [breeds[i % breeds.length], breeds[(i + 1) % breeds.length]]; buildPlayerModel();
+      setup.mode = i % 2 ? 'trial' : 'pack';
+      startRace(); countT = 0.01;
+      R.debug.sim(150, 'perfect');
+      $('endOv').hidden = true; $('startOv').hidden = false; state = 'ready'; reset();
+      requestAnimationFrame(() => requestAnimationFrame(() => {   // let two frames upload resources
+        const m = renderer.info.memory;
+        rows.push({ cycle: i + 1, geometries: m.geometries, textures: m.textures, assets: R.Assets.stats().entries,
+          heapMB: performance.memory ? +(performance.memory.usedJSHeapSize / 1048576).toFixed(1) : null });
+        i++;
+        if (i < 20) setTimeout(cycle, 50);
+        else {
+          const warm = rows.slice(0, 4), rest = rows.slice(4);
+          const grew = ['geometries', 'textures', 'assets'].filter(k => rest.some(r => r[k] > Math.max(...warm.map(w => w[k]))));
+          R.Stats.leak = { pass: grew.length === 0, growing: grew, rows };
+          R.Stats.scenario = `leaktest: ${grew.length ? 'FAIL (' + grew.join(', ') + ')' : 'PASS'}`;
+          say(R.Stats.scenario);
+        }
+      }));
+    };
+    setTimeout(cycle, 300);
+  }
+  function scheduleContextLoss() {
+    const watch = setInterval(() => {
+      if (state === 'race' && raceT > 5) {
+        clearInterval(watch);
+        R.Stats.scenario = 'losecontext: lost at 5 s';
+        R.debug.loseContext();
+        setTimeout(() => { R.debug.restoreContext(); R.Stats.scenario = 'losecontext: restore requested'; }, 3000);
+      }
+    }, 250);
   }
 
   // ---------- quality tiers (src/quality.js): applied at load and whenever the tier changes ----------
@@ -944,6 +1012,8 @@
     state = 'ready';
     R.Stats.loadMs = Math.round(performance.now());
     applyQuality();
+    if (AUTO.leak) runLeakTest();
+    if (AUTO.lose) scheduleContextLoss();
     btn.disabled = false; btn.textContent = 'Start race';
     paintMenu();
     requestAnimationFrame(t0 => { last = t0; requestAnimationFrame(frame); });
