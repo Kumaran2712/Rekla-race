@@ -1,0 +1,26 @@
+{
+  "name": "rekla-race",
+  "version": "2.0.0-m0",
+  "private": true,
+  "description": "Rekla Race: a Tamil Nadu bullock-cart racing game in the browser",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --port 4173 --strictPort",
+    "test:sim": "node tests/sim-check.cjs",
+    "test:shaders": "node tests/shader-anchors.cjs",
+    "capture": "node tests/capture.cjs",
+    "compare": "node tests/compare.cjs"
+  },
+  "dependencies": {
+    "three": "0.128.0"
+  },
+  "devDependencies": {
+    "playwright": "1.63.0",
+    "vite": "8.3.5"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}

@@ -205,22 +205,7 @@ button:focus-visible{outline:3px solid var(--marigold);outline-offset:2px}
   </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script>
-  if (typeof THREE === 'undefined') {
-    document.getElementById('bestStart').textContent = 'The 3D engine did not load. Check your connection and reopen the page.';
-  }
-</script>
-<script src="js/core.js"></script>
-<script src="js/textures.js"></script>
-<script src="js/sky.js"></script>
-<script src="js/world.js"></script>
-<script src="js/scenery.js"></script>
-<script src="js/models.js"></script>
-<script src="js/crowd.js"></script>
-<script src="js/weather.js"></script>
-<script src="js/post.js"></script>
-<script src="js/audio.js"></script>
-<script src="js/game.js"></script>
+<!-- three.js is bundled by Vite with the game modules (src/main.js), so there is no CDN to fail. -->
+<script type="module" src="/src/main.js"></script>
 </body>
 </html>
