@@ -73,3 +73,20 @@ This is the plan once a base model is approved and bought. Every step that can b
 | 10. Integration | Load through `AssetCache` into `R.Models.cart` behind `?bull=glb`. Drive the clip from `c.step` (audit 5b). | Game code | — | Gates 6–7 |
 
 **Equipment note:** steps 2, 3 and 6 need either an artist with Blender or a computer for you. The scripted steps (1, 4, 5, 9) can run here in the cloud sandbox.
+
+## Free and open-source options (added 3 Nov 2026, at your request)
+
+| Candidate | Where | What it is | Licence | Fit |
+| --- | --- | --- | --- | --- |
+| "Brahman bull Zebu" by maximorengifo2022 | [Sketchfab](https://sketchfab.com/3d-models/brahman-bull-zebu-3e2254015caa4c878347e2985a927edd) | Humped zebu bull, marked "Download Free" | **Not verified.** Sketchfab blocks automated reading, so I could not open the page. Free Sketchfab downloads carry a Creative Commons licence: **CC BY** (commercial use allowed with credit) or **CC BY-NC** (no commercial use). | Best free anatomy lead. Rig and triangle count unknown. |
+| "Boi Zebu / bull Zebu" by plinioranhel | [Sketchfab](https://sketchfab.com/3d-models/boi-zebu-bull-zebu-edcd0d2bd8ba4294b49cb9092c21a30e) | Humped zebu bull, marked "Download Free" | Not verified (as above) | Second lead |
+| "Brahman Cow" by kunyong_Chen | [Sketchfab](https://sketchfab.com/3d-models/brahman-cow-d77b862414c048728e02d66671808d13) | Zebu cow, marked "Download Free" | Not verified (as above) | A cow, so the body needs bull mass. Reference or fallback only. |
+| "LowPoly Animated Farm Animal Pack" by Quaternius | [itch.io](https://quaternius.itch.io/lowpoly-animated-animals) | Stylised low-poly cow with idle, walk and run clips (some buyers report fewer) | **CC0**: free for any use, no credit needed | Not the look. Ideal for proving the GLB, skinning and stride-lock code. |
+| BlenderKit free library | [blenderkit.com](https://www.blenderkit.com) | Large free library inside Blender | Royalty-free or CC0 per asset | Worth a search for zebu or Indian cattle. Needs Blender and a free account. |
+
+**Rules for using any of these:**
+- Use only CC0 or CC BY. Never NC (non-commercial) if the game may ever earn money or go on the Play Store.
+- CC BY means the creator's name and the licence must appear in a credits screen.
+- Free Sketchfab models are usually **not rigged**. In that case I add a quadruped rig and skin weights with scripted Blender (Rigify plus automatic weights, then hand fixes). The gallop is keyed on that rig and locked to the stride clock.
+- That is a real step up from today's rigid legs, but it is still below the reference image's bulls. Closing that last gap is where a human animal artist helps most.
+- This sandbox cannot download from Sketchfab or BlenderKit. You download the file (a free Sketchfab account is needed) and attach it here, together with a screenshot of the licence line on the page.
