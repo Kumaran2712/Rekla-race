@@ -42,3 +42,10 @@ Plan and acceptance gates: Technical Audit Revision 2 and the approval brief of 
 ## Known limitations and open risks
 
 - Headless captures use SwiftShader (CPU rendering). They are deterministic and good for regression, but say nothing about phone performance or exact GPU output.
+
+## Sign-off (3 November 2026)
+
+- You approved M0 + M1 and reported that the build works fine on the iPhone 16 and Pixel 9. **No device JSON reports were pasted**, so phone FPS, p95 frame time, thermal drift and memory are user-reported as working, not measured. They can be captured later from the preview link (`#stats-autoplay`).
+- Balance check v2 approved: 30 runs per case compared with the r128 distribution (mean within 0.5 s, wins within 5). Result on the final build: all four cases pass.
+- Visual review: approved, with the known differences accepted (shadow-edge pixels, slightly lighter dust, one portrait shot's stride phase).
+- Road and format stay as the design bible says: red-earth village track, point to point.
